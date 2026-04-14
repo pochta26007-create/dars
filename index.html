@@ -56,6 +56,20 @@
           Focus, Activity, Box, ChevronLeft, AlertTriangle
         } from 'lucide-react';
 
+        // --- ANIMATION VARIANTS ---
+        const containerVariants = {
+          hidden: { opacity: 0 },
+          show: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
+          }
+        };
+
+        const itemVariants = {
+          hidden: { opacity: 0, y: 15, scale: 0.95 },
+          show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 350, damping: 25 } }
+        };
+
         // --- MODERN UI COMPONENTS ---
 
         const Card = ({ children, className = '' }) => (
@@ -381,10 +395,10 @@
                       "Alohida kuzatib boriladigan bagajda olib o'tiladigan notijorat maqsadlardagi tovarlarga;",
                       "Tegishli taqiqlar va (yoki) cheklovlar belgilangan tovarlarga."
                     ].map((text, i) => (
-                      <div key={i} className="flex items-start gap-4 bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
+                      <motion.div variants={itemVariants} key={i} className="flex items-start gap-4 bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
                         <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-500 text-white text-sm font-black shrink-0 shadow-md">{i+1}</span>
                         <span className="text-[15px] text-slate-100 leading-relaxed font-medium pt-1">{text}</span>
-                      </div>
+                      </motion.div>
                     ))}
                     
                     {/* Special Mobile Rule */}
@@ -527,13 +541,13 @@
                       { text: "Polimer (plastik) idishdagi alkohol (pivo va vinodan tashqari)", law: "O'RQ-302 Qonun" },
                       { text: "Ilgari foydalanilgan generatorlar, transformatorlar (D toifa)", law: "PQ-4422 qarori" },
                     ].map((item, i) => (
-                      <div key={i} className={`flex items-start gap-4 p-4 rounded-2xl border font-medium text-[15px] ${item.highlight ? 'bg-red-500/20 border-red-500/50 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'} transition-colors`}>
+                      <motion.div variants={itemVariants} key={i} className={`flex items-start gap-4 p-4 rounded-2xl border font-medium text-[15px] ${item.highlight ? 'bg-red-500/20 border-red-500/50 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'} transition-colors`}>
                         <div className={`w-3 h-3 rounded-full mt-1.5 shrink-0 ${item.highlight ? 'bg-red-500 shadow-[0_0_10px_#ef4444] animate-pulse' : 'bg-red-500/50'}`}></div>
                         <div className="flex flex-col">
                           <span className={`${item.highlight ? 'font-black' : 'font-bold'}`}>{item.text}</span>
                           <span className={`text-[11px] font-black uppercase tracking-wider mt-1.5 ${item.highlight ? 'text-red-300' : 'text-slate-500'}`}>{item.law}</span>
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
@@ -627,7 +641,7 @@
                       { t: "Ekologik xavfli mahsulotlar va chiqindilar", l: "VM 43, 75-son" },
                       { t: "Axborotni kriptografik muhofaza qilish vositalari", l: "PQ-614-son qarori" }
                     ].map((item, i) => (
-                      <div key={i} className="flex flex-col gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/10 backdrop-blur-sm shadow-inner">
+                      <motion.div variants={itemVariants} key={i} className="flex flex-col gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/10 backdrop-blur-sm shadow-inner">
                         <div className="flex items-start gap-3">
                           <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                           <span className="font-bold text-[15px] text-slate-200 leading-snug">{item.t}</span>
@@ -635,7 +649,7 @@
                         <div className="pl-8">
                           <span className="text-[10px] font-black text-amber-400/80 uppercase tracking-widest bg-black/30 px-2 py-1 rounded-md inline-block">{item.l}</span>
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
@@ -1082,7 +1096,11 @@
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
                         {filteredSections.map((section, index) => (
-                          <button
+                          <motion.button
+                            variants={itemVariants}
+                            initial="hidden"
+                            animate="show"
+                            whileTap={{ scale: 0.98 }}
                             key={section.id}
                             onClick={() => setActiveTab(section.id)}
                             className="w-full bg-white p-4 sm:p-5 rounded-3xl border border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.03)] flex items-center gap-4 text-left hover:shadow-[0_8px_25px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden"
@@ -1099,7 +1117,7 @@
                             <div className="hidden sm:flex w-10 h-10 rounded-full bg-slate-50 items-center justify-center group-hover:bg-blue-50 transition-colors shrink-0 relative z-10 border border-slate-100 group-hover:border-blue-100">
                               <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-500" />
                             </div>
-                          </button>
+                          </motion.button>
                         ))}
                       </div>
                       
