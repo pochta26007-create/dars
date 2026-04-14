@@ -2,13 +2,16 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Toshkent Aeroporti - Bojxona Qo'llanmasi</title>
     
+    <!-- Telegram Web App Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
     <!-- Tailwind CSS (Styling) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Custom Scrollbar Hide Styles -->
+    <!-- Custom Styles for Mobile App Feel -->
     <style>
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
@@ -19,6 +22,14 @@
         }
         body {
             -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+            user-select: none; /* Native app feel, prevents text highlighting */
+            -webkit-user-select: none;
+        }
+        /* Allow text selection only in specific areas if needed */
+        .allow-select {
+            user-select: text;
+            -webkit-user-select: text;
         }
     </style>
 
@@ -37,14 +48,14 @@
     <!-- Babel Compiler for Browser (to run JSX) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-[#f8fafc] text-slate-900">
+<body class="bg-[#f8fafc] text-slate-900 overflow-hidden">
     
     <!-- React App Root -->
     <div id="root"></div>
 
     <!-- Main Application Logic -->
     <script type="text/babel" data-type="module">
-        import React, { useState, useMemo, useRef } from 'react';
+        import React, { useState, useMemo, useRef, useEffect } from 'react';
         import { createRoot } from 'react-dom/client';
         import { motion, AnimatePresence } from 'framer-motion';
         import { 
@@ -55,6 +66,13 @@
           UserCheck, Gavel, Package, FileSignature, AlertOctagon, ChevronRight,
           Focus, Activity, Box, ChevronLeft, AlertTriangle
         } from 'lucide-react';
+
+        // --- UTILITIES ---
+        const handleHaptic = (type = 'light') => {
+          if (window.Telegram?.WebApp?.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.impactOccurred(type);
+          }
+        };
 
         // --- ANIMATION VARIANTS ---
         const containerVariants = {
@@ -71,43 +89,42 @@
         };
 
         // --- MODERN UI COMPONENTS ---
-
         const Card = ({ children, className = '' }) => (
-          <div className={`bg-white rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 p-5 sm:p-7 transition-all duration-300 ${className}`}>
+          <div className={`bg-white rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-slate-100/60 p-5 sm:p-7 transition-all duration-300 ${className}`}>
             {children}
           </div>
         );
 
         const LegalBasis = ({ children }) => (
-          <div className="mt-6 flex items-start gap-3.5 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/60 relative overflow-hidden group">
+          <div className="mt-6 flex items-start gap-3 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/60 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-300 group-hover:bg-blue-500 transition-colors duration-300"></div>
             <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-100 shrink-0">
               <Scale className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors" />
             </div>
             <div className="pt-0.5">
-              <span className="font-bold block mb-1 text-slate-800 text-[13px] uppercase tracking-wider">Huquqiy asosi</span>
-              <span className="text-sm text-slate-600 leading-relaxed font-medium">{children}</span>
+              <span className="font-bold block mb-1 text-slate-800 text-[12px] uppercase tracking-wider">Huquqiy asosi</span>
+              <span className="text-[13px] sm:text-sm text-slate-600 leading-relaxed font-medium">{children}</span>
             </div>
           </div>
         );
 
         const LawBadge = ({ children }) => (
-          <span className="inline-flex items-center gap-1.5 rounded-md bg-indigo-50/80 px-2.5 py-1 text-[11px] sm:text-xs font-black text-indigo-700 border border-indigo-200/50 mx-1 shadow-sm whitespace-nowrap my-0.5">
+          <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50/80 px-2 py-0.5 text-[11px] font-black text-indigo-700 border border-indigo-200/50 mx-1 shadow-sm whitespace-nowrap my-0.5">
             <Scale className="w-3 h-3 text-indigo-500" />
             {children}
           </span>
         );
 
         const AlertDanger = ({ title, children, icon: Icon = ShieldAlert }) => (
-          <div className="my-6 bg-red-50/80 border border-red-100 p-5 sm:p-6 rounded-3xl relative overflow-hidden">
+          <div className="my-6 bg-red-50/80 border border-red-100 p-5 rounded-2xl relative overflow-hidden">
             <div className="absolute -right-4 -top-4 opacity-[0.03]"><Icon className="w-32 h-32 text-red-900"/></div>
-            <div className="flex items-center gap-3 mb-4 relative z-10">
+            <div className="flex items-center gap-3 mb-3 relative z-10">
               <div className="p-2 bg-red-100 rounded-xl">
                 <Icon className="w-5 h-5 text-red-600" />
               </div>
-              <h4 className="font-black text-red-900 text-lg uppercase tracking-wide">{title}</h4>
+              <h4 className="font-black text-red-900 text-base sm:text-lg uppercase tracking-wide leading-tight">{title}</h4>
             </div>
-            <div className="text-red-900 text-sm sm:text-base space-y-2 leading-relaxed relative z-10 font-medium">{children}</div>
+            <div className="text-red-900 text-[14px] sm:text-base space-y-2 leading-relaxed relative z-10 font-medium">{children}</div>
           </div>
         );
 
@@ -122,7 +139,7 @@
             <h2 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight leading-tight">
               {title}
             </h2>
-            {subtitle && <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mt-2">{subtitle}</p>}
+            {subtitle && <p className="text-slate-500 font-bold uppercase tracking-widest text-[11px] sm:text-xs mt-2 leading-snug">{subtitle}</p>}
           </div>
         );
 
@@ -137,33 +154,33 @@
             bg: "bg-teal-50 text-teal-600",
             searchKeywords: "hudud chegara zona nazorat o'tkazish og'zaki so'rov ko'zdan kechirish ko'rik jarima mjtK 227",
             content: () => (
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <GradientHeader title="Bojxona nazoratini amalga oshirish shakllari" subtitle="Hujjat bo'yicha aniq ta'riflar"/>
                 
                 <div className="space-y-4">
                   <Card>
-                    <h3 className="font-black text-slate-800 mb-3 flex items-center gap-3 text-lg">
+                    <h3 className="font-black text-slate-800 mb-3 flex items-center gap-3 text-base sm:text-lg">
                       <div className="p-2.5 bg-emerald-50 rounded-[10px] text-emerald-600"><Map className="w-5 h-5"/></div> 
                       Bojxona hududi
                     </h3>
-                    <p className="text-[15px] text-slate-700 leading-relaxed font-medium">O'zbekiston Respublikasining <HighlightText>quruqlikdagi hududi</HighlightText>, <HighlightText>hududiy va ichki suvlari</HighlightText> hamda ular ustidagi <HighlightText>havo hududi</HighlightText>.</p>
+                    <p className="text-[14px] sm:text-[15px] text-slate-700 leading-relaxed font-medium">O'zbekiston Respublikasining <HighlightText>quruqlikdagi hududi</HighlightText>, <HighlightText>hududiy va ichki suvlari</HighlightText> hamda ular ustidagi <HighlightText>havo hududi</HighlightText>.</p>
                   </Card>
                   
                   <Card>
-                    <h3 className="font-black text-slate-800 mb-3 flex items-center gap-3 text-lg">
+                    <h3 className="font-black text-slate-800 mb-3 flex items-center gap-3 text-base sm:text-lg">
                       <div className="p-2.5 bg-blue-50 rounded-[10px] text-blue-600"><Focus className="w-5 h-5"/></div> 
                       Bojxona chegarasi
                     </h3>
-                    <p className="text-[15px] text-slate-700 leading-relaxed font-medium">Bojxona hududi sarhadlari, shuningdek <HighlightText>erkin bojxona zonalarining</HighlightText> va <HighlightText>erkin omborlarning</HighlightText> tegralari.</p>
+                    <p className="text-[14px] sm:text-[15px] text-slate-700 leading-relaxed font-medium">Bojxona hududi sarhadlari, shuningdek <HighlightText>erkin bojxona zonalarining</HighlightText> va <HighlightText>erkin omborlarning</HighlightText> tegralari.</p>
                   </Card>
                   
                   <Card className="border-l-4 border-l-indigo-500">
-                    <h3 className="font-black text-slate-800 mb-3 flex items-center gap-3 text-lg">
+                    <h3 className="font-black text-slate-800 mb-3 flex items-center gap-3 text-base sm:text-lg">
                       <div className="p-2.5 bg-indigo-50 rounded-[10px] text-indigo-600"><ShieldAlert className="w-5 h-5"/></div> 
                       Bojxona nazorati zonasi
                     </h3>
-                    <p className="text-[15px] text-slate-700 leading-relaxed font-medium mb-3">Bojxona hududining bojxona to'g'risidagi qonunchilikka rioya etilishini ta'minlash maqsadida tashkil qilinadigan, <HighlightText>maxsus ajratib va belgilab qo'yilgan qismi</HighlightText>.</p>
-                    <p className="text-sm text-slate-600 leading-relaxed font-medium border-t border-slate-100 pt-3">
+                    <p className="text-[14px] sm:text-[15px] text-slate-700 leading-relaxed font-medium mb-3">Bojxona hududining bojxona to'g'risidagi qonunchilikka rioya etilishini ta'minlash maqsadida tashkil qilinadigan, <HighlightText>maxsus ajratib va belgilab qo'yilgan qismi</HighlightText>.</p>
+                    <p className="text-[13px] sm:text-sm text-slate-600 leading-relaxed font-medium border-t border-slate-100 pt-3">
                       Bojxona nazorati zonasi rejimiga rioya etilishini nazorat qilish bojxona organining mansabdor shaxsi tomonidan amalga oshiriladi <LawBadge>BK 182-moddasi</LawBadge>.
                     </p>
                   </Card>
@@ -172,37 +189,37 @@
                 <AlertDanger title="Qat'iy Ogohlantirish va Jarimalar">
                   Bojxona organining <strong>ruxsatisiz</strong> bojxona nazorati zonasi chegarasi orqali va uning doirasida tovarlar, transport vositalari va shaxslarni olib o'tish yoki bojxona nazorati zonasi rejimini buzuvchi boshqa xatti-harakatlar sodir etish qat'iyan taqiqlanadi.
                   <div className="mt-4 bg-white p-4 rounded-xl border border-red-100 text-red-900 shadow-sm">
-                     <p className="font-bold mb-2 flex items-center gap-2"><Gavel className="w-4 h-4"/> Jarima miqdorlari <LawBadge>MJtK 227-moddasi</LawBadge>:</p>
-                     <ul className="list-disc pl-5 space-y-1">
+                     <p className="font-bold mb-2 flex items-center gap-2 text-[13px] sm:text-sm"><Gavel className="w-4 h-4"/> Jarima miqdorlari <LawBadge>MJtK 227-moddasi</LawBadge>:</p>
+                     <ul className="list-disc pl-5 space-y-1.5 text-[13px] sm:text-sm">
                        <li>Fuqarolarga: BHMning <HighlightText>1 baravaridan 3 baravarigacha</HighlightText>.</li>
                        <li>Mansabdor shaxslarga: BHMning <HighlightText>3 baravaridan 5 baravarigacha</HighlightText>.</li>
                      </ul>
                   </div>
                 </AlertDanger>
 
-                <Card className="border-t-[6px] border-t-blue-500 bg-gradient-to-b from-blue-50/30 to-white">
+                <Card className="border-t-[6px] border-t-blue-500 bg-gradient-to-b from-blue-50/30 to-white px-4 sm:px-6">
                   <h3 className="text-xl font-black text-slate-800 mb-2 flex items-center gap-3">
-                    <ListChecks className="w-7 h-7 text-blue-500" />
+                    <ListChecks className="w-6 h-6 sm:w-7 sm:h-7 text-blue-500" />
                     Nazorat shakllari va qoidalari
                   </h3>
-                  <p className="text-sm text-slate-600 mb-6 font-medium leading-relaxed bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <p className="text-[13px] sm:text-sm text-slate-600 mb-6 font-medium leading-relaxed bg-blue-50 p-4 rounded-xl border border-blue-100">
                     Bojxona organlari bojxona nazorati shakllarini qo'llashda <HighlightText>tanlab olish prinsipiga</HighlightText> asoslanadi va bojxona nazoratining bojxona to'g'risidagi qonunchiligiga rioya etilishini ta'minlaydigan shakllari bilan cheklanadi. Shaklni tanlash xodim tomonidan belgilanadi <LawBadge>BK 189-moddasi</LawBadge>.
                   </p>
                   
                   <div className="space-y-4">
-                    <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                      <h4 className="font-black text-slate-800 text-lg mb-2 flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">1</div> Og'zaki so'rov</h4>
-                      <p className="text-[15px] text-slate-600 font-medium leading-relaxed pl-11">Zarur axborotni og'zaki shaklda, bunday so'rov natijalarini yozma shaklda rasmiylashtirmagan holda olish <LawBadge>BK 191-modda</LawBadge>.</p>
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <h4 className="font-black text-slate-800 text-base sm:text-lg mb-2 flex items-center gap-3"><div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm shrink-0">1</div> Og'zaki so'rov</h4>
+                      <p className="text-[14px] sm:text-[15px] text-slate-600 font-medium leading-relaxed pl-10 sm:pl-11">Zarur axborotni og'zaki shaklda, bunday so'rov natijalarini yozma shaklda rasmiylashtirmagan holda olish <LawBadge>BK 191-modda</LawBadge>.</p>
                     </div>
                     
-                    <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                      <h4 className="font-black text-slate-800 text-lg mb-2 flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">2</div> Bojxona ko'zdan kechiruvi</h4>
-                      <p className="text-[15px] text-slate-600 font-medium leading-relaxed pl-11">Obyektlarni va ularning qismlarini bo'laklarga <HighlightText>ajratmagan</HighlightText> va boshqa yo'llar bilan ularning butligini buzmagan holda tashqi ko'rinishini ko'zdan kechirish <LawBadge>BK 193-modda</LawBadge>.</p>
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <h4 className="font-black text-slate-800 text-base sm:text-lg mb-2 flex items-center gap-3"><div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm shrink-0">2</div> Bojxona ko'zdan kechiruvi</h4>
+                      <p className="text-[14px] sm:text-[15px] text-slate-600 font-medium leading-relaxed pl-10 sm:pl-11">Obyektlarni va ularning qismlarini bo'laklarga <HighlightText>ajratmagan</HighlightText> va boshqa yo'llar bilan ularning butligini buzmagan holda tashqi ko'rinishini ko'zdan kechirish <LawBadge>BK 193-modda</LawBadge>.</p>
                     </div>
                     
-                    <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                      <h4 className="font-black text-slate-800 text-lg mb-2 flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">3</div> Bojxona ko'rigi</h4>
-                      <p className="text-[15px] text-slate-600 font-medium leading-relaxed pl-11">Qo'yilgan bojxona identifikatsiyalashi vositalarini <HighlightText>buzgan xolda</HighlightText>, tovarlar bo'lgan yoki bo'lishi ehtimoli bo'lgan joylarni ochishni nazarda tutadi <LawBadge>BK 195-modda</LawBadge>.</p>
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <h4 className="font-black text-slate-800 text-base sm:text-lg mb-2 flex items-center gap-3"><div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm shrink-0">3</div> Bojxona ko'rigi</h4>
+                      <p className="text-[14px] sm:text-[15px] text-slate-600 font-medium leading-relaxed pl-10 sm:pl-11">Qo'yilgan bojxona identifikatsiyalashi vositalarini <HighlightText>buzgan xolda</HighlightText>, tovarlar bo'lgan yoki bo'lishi ehtimoli bo'lgan joylarni ochishni nazarda tutadi <LawBadge>BK 195-modda</LawBadge>.</p>
                     </div>
                   </div>
                 </Card>
@@ -221,56 +238,56 @@
               <div className="space-y-6">
                 <GradientHeader title="Shaxsiy ko'rik jarayoni" subtitle="Hujjatdagi to'liq ko'rsatmalar"/>
                 
-                <Card className="border-t-[6px] border-t-indigo-500 bg-slate-900 text-white p-6 sm:p-8">
-                  <p className="text-[15px] text-slate-200 mb-6 leading-relaxed font-medium">
-                    <strong className="text-white block mb-2 text-lg border-b border-slate-700 pb-2">Qachon o'tkaziladi? (Asoslar)</strong> 
+                <Card className="border-t-[6px] border-t-indigo-500 bg-slate-900 text-white p-5 sm:p-8 px-4">
+                  <p className="text-[14px] sm:text-[15px] text-slate-200 mb-6 leading-relaxed font-medium">
+                    <strong className="text-white block mb-2 text-base sm:text-lg border-b border-slate-700 pb-2">Qachon o'tkaziladi? (Asoslar)</strong> 
                     Bojxona hududiga olib kirish yoki ushbu hududdan olib chiqish taqiqlangan tovarlarni jismoniy shaxs <HighlightText>yonida yashirmoqda</HighlightText> va ularni o'z ixtiyori bilan <HighlightText>taqdim etmoqchi emas</HighlightText>, deb taxmin qilishga asoslar bo'lgan taqdirda. (Shuningdek, Xavfni boshqarish tizimi topshirig'i yoki masofaviy nazorat natijasi asosida).
                   </p>
-                  <div className="bg-white/10 p-5 rounded-2xl border border-white/20 backdrop-blur-md">
-                    <h4 className="font-black text-indigo-300 mb-4 flex items-center gap-3 text-lg">
-                      <UserCheck className="w-6 h-6"/> Ko'rikdan avvalgi harakatlar:
+                  <div className="bg-white/10 p-4 sm:p-5 rounded-2xl border border-white/20 backdrop-blur-md">
+                    <h4 className="font-black text-indigo-300 mb-4 flex items-center gap-3 text-base sm:text-lg leading-tight">
+                      <UserCheck className="w-6 h-6 shrink-0"/> Ko'rikdan avvalgi harakatlar:
                     </h4>
-                    <ul className="space-y-4">
-                      <li className="flex items-start gap-3 text-[15px] font-medium"><CheckCircle className="w-5 h-5 text-emerald-400 shrink-0"/> <div>Ko'rik o'tkazish haqidagi <strong>qaror bojxona organi boshlig'i</strong> yoki uning o'rinbosari tomonidan qabul qilinishi.</div></li>
-                      <li className="flex items-start gap-3 text-[15px] font-medium"><CheckCircle className="w-5 h-5 text-emerald-400 shrink-0"/> <div>Qarorni jismoniy shaxsga e'lon qilish.</div></li>
-                      <li className="flex items-start gap-3 text-[15px] font-medium"><CheckCircle className="w-5 h-5 text-emerald-400 shrink-0"/> <div>Shaxsni uning huquqlari bilan tanishtirish.</div></li>
-                      <li className="flex items-start gap-3 text-[15px] font-medium"><CheckCircle className="w-5 h-5 text-emerald-400 shrink-0"/> <div>Tovarlarni o'z <strong>ixtiyori bilan berishni taklif qilish shart</strong>.</div></li>
+                    <ul className="space-y-3 sm:space-y-4">
+                      <li className="flex items-start gap-3 text-[14px] sm:text-[15px] font-medium"><CheckCircle className="w-5 h-5 text-emerald-400 shrink-0"/> <div className="pt-0.5">Ko'rik o'tkazish haqidagi <strong>qaror bojxona organi boshlig'i</strong> yoki uning o'rinbosari tomonidan qabul qilinishi.</div></li>
+                      <li className="flex items-start gap-3 text-[14px] sm:text-[15px] font-medium"><CheckCircle className="w-5 h-5 text-emerald-400 shrink-0"/> <div className="pt-0.5">Qarorni jismoniy shaxsga e'lon qilish.</div></li>
+                      <li className="flex items-start gap-3 text-[14px] sm:text-[15px] font-medium"><CheckCircle className="w-5 h-5 text-emerald-400 shrink-0"/> <div className="pt-0.5">Shaxsni uning huquqlari bilan tanishtirish.</div></li>
+                      <li className="flex items-start gap-3 text-[14px] sm:text-[15px] font-medium"><CheckCircle className="w-5 h-5 text-emerald-400 shrink-0"/> <div className="pt-0.5">Tovarlarni o'z <strong>ixtiyori bilan berishni taklif qilish shart</strong>.</div></li>
                     </ul>
                   </div>
-                  <div className="mt-6 bg-red-500/20 border border-red-500/50 p-4 rounded-xl flex gap-3">
+                  <div className="mt-5 bg-red-500/20 border border-red-500/50 p-4 rounded-xl flex gap-3">
                      <AlertOctagon className="w-6 h-6 text-red-400 shrink-0"/>
-                     <p className="text-sm font-bold text-red-200">Agar shaxs qonuniy talablarni bajarmasa yoki qarshilik ko'rsatsa, bu uni <strong>ma'muriy yo'l bilan ushlab turish</strong> uchun asos bo'ladi.</p>
+                     <p className="text-[13px] sm:text-sm font-bold text-red-100 leading-snug">Agar shaxs qonuniy talablarni bajarmasa yoki qarshilik ko'rsatsa, bu uni <strong>ma'muriy yo'l bilan ushlab turish</strong> uchun asos bo'ladi.</p>
                   </div>
                 </Card>
 
-                <Card>
-                  <h3 className="text-xl font-black text-slate-800 mb-5 flex items-center gap-3"><Gavel className="w-6 h-6 text-slate-500"/> O'tkazish qoidalari <LawBadge>BK 196-moddasi</LawBadge></h3>
+                <Card className="px-4 sm:px-7">
+                  <h3 className="text-lg sm:text-xl font-black text-slate-800 mb-5 flex items-center gap-3"><Gavel className="w-6 h-6 text-slate-500 shrink-0"/> O'tkazish qoidalari <LawBadge>BK 196-moddasi</LawBadge></h3>
                   <div className="space-y-3">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2 shrink-0"/> <p className="text-[15px] text-slate-700 font-medium"><HighlightText>Alohida</HighlightText>, sanitariya-gigiyena talablariga javob beradigan xonada o'tkaziladi.</p></div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2 shrink-0"/> <p className="text-[15px] text-slate-700 font-medium">Boshqa shaxslar kuzatishini mutlaqo <HighlightText>istisno etgan holda</HighlightText>.</p></div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2 shrink-0"/> <p className="text-[15px] text-slate-700 font-medium">Ko'rikdan o'tkazilayotgan shaxs bilan <HighlightText>bir jinsdagi xodim</HighlightText> tomonidan o'tkaziladi.</p></div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2 shrink-0"/> <p className="text-[15px] text-slate-700 font-medium">Aynan shu jinsdagi <HighlightText>ikki xolis</HighlightText> ishtirokida.</p></div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2 shrink-0"/> <p className="text-[15px] text-slate-700 font-medium">Tana faqat tibbiyot xodimlari tomonidan tekshiriladi.</p></div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2 shrink-0"/> <p className="text-[15px] text-slate-700 font-medium">Zarur bo'lganda tarjimon jalb qilinadi.</p></div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2 shrink-0"/> <p className="text-[15px] text-slate-700 font-medium">Voyaga yetmagan yoki muomalaga layoqatsiz shaxs ko'rigida qonuniy vakillari hozir bo'lishiga haqli.</p></div>
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-200 flex gap-3"><FileSignature className="w-5 h-5 text-blue-600 shrink-0 mt-0.5"/> <p className="text-[15px] text-blue-900 font-bold">Natijalar bo'yicha belgilangan shaklda bayonnoma tuziladi.</p></div>
+                    <div className="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2.5 shrink-0"/> <p className="text-[14px] sm:text-[15px] text-slate-700 font-medium"><HighlightText>Alohida</HighlightText>, sanitariya-gigiyena talablariga javob beradigan xonada o'tkaziladi.</p></div>
+                    <div className="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2.5 shrink-0"/> <p className="text-[14px] sm:text-[15px] text-slate-700 font-medium">Boshqa shaxslar kuzatishini mutlaqo <HighlightText>istisno etgan holda</HighlightText>.</p></div>
+                    <div className="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2.5 shrink-0"/> <p className="text-[14px] sm:text-[15px] text-slate-700 font-medium">Ko'rikdan o'tkazilayotgan shaxs bilan <HighlightText>bir jinsdagi xodim</HighlightText> tomonidan o'tkaziladi.</p></div>
+                    <div className="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2.5 shrink-0"/> <p className="text-[14px] sm:text-[15px] text-slate-700 font-medium">Aynan shu jinsdagi <HighlightText>ikki xolis</HighlightText> ishtirokida.</p></div>
+                    <div className="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2.5 shrink-0"/> <p className="text-[14px] sm:text-[15px] text-slate-700 font-medium">Tana faqat tibbiyot xodimlari tomonidan tekshiriladi.</p></div>
+                    <div className="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2.5 shrink-0"/> <p className="text-[14px] sm:text-[15px] text-slate-700 font-medium">Zarur bo'lganda tarjimon jalb qilinadi.</p></div>
+                    <div className="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 mt-2.5 shrink-0"/> <p className="text-[14px] sm:text-[15px] text-slate-700 font-medium">Voyaga yetmagan yoki muomalaga layoqatsiz shaxs ko'rigida qonuniy vakillari hozir bo'lishiga haqli.</p></div>
+                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-200 flex gap-3"><FileSignature className="w-5 h-5 text-blue-600 shrink-0 mt-0.5"/> <p className="text-[14px] sm:text-[15px] text-blue-900 font-bold leading-snug">Natijalar bo'yicha belgilangan shaklda bayonnoma tuziladi.</p></div>
                   </div>
                 </Card>
 
-                <div className="bg-gradient-to-br from-indigo-600 to-purple-800 rounded-[2rem] p-6 sm:p-8 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-gradient-to-br from-indigo-600 to-purple-800 rounded-[2rem] p-5 sm:p-8 text-white shadow-2xl relative overflow-hidden">
                   <div className="absolute -right-10 -bottom-10 opacity-10"><Fingerprint className="w-64 h-64"/></div>
-                  <h3 className="text-2xl font-black mb-6 flex items-center gap-3 relative z-10"><Focus className="w-8 h-8 text-indigo-300"/> Soddalashtirilgan shakli</h3>
-                  <p className="text-indigo-100 mb-5 relative z-10 text-[15px] font-medium leading-relaxed">Vaqtni tejash va qulaylik maqsadida, quyidagi usullar orqali soddalashtirilgan ko'rik amalga oshirilishi mumkin:</p>
-                  <ul className="space-y-4 text-blue-50 mb-6 relative z-10 font-medium">
-                    <li className="flex items-center gap-4 bg-white/10 p-5 rounded-2xl border border-white/10"><CheckCircle className="w-6 h-6 text-emerald-400 shrink-0"/> <span className="text-[16px]">Inson tanasini skaner qiluvchi qurilmalarni qo'llash orqali.</span></li>
-                    <li className="flex items-center gap-4 bg-white/10 p-5 rounded-2xl border border-white/10"><CheckCircle className="w-6 h-6 text-emerald-400 shrink-0"/> <span className="text-[16px]">Ust kiyim boshlarini yechintirmagan holda, ust kiyim va tanani paypaslab tekshirish orqali.</span></li>
+                  <h3 className="text-xl sm:text-2xl font-black mb-5 flex items-center gap-3 relative z-10"><Focus className="w-7 h-7 sm:w-8 sm:h-8 text-indigo-300"/> Soddalashtirilgan shakli</h3>
+                  <p className="text-indigo-100 mb-5 relative z-10 text-[14px] sm:text-[15px] font-medium leading-relaxed">Vaqtni tejash va qulaylik maqsadida, quyidagi usullar orqali soddalashtirilgan ko'rik amalga oshirilishi mumkin:</p>
+                  <ul className="space-y-3 sm:space-y-4 text-blue-50 mb-6 relative z-10 font-medium">
+                    <li className="flex items-start gap-4 bg-white/10 p-4 sm:p-5 rounded-2xl border border-white/10"><CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 shrink-0"/> <span className="text-[14px] sm:text-[15px]">Inson tanasini skaner qiluvchi qurilmalarni qo'llash orqali.</span></li>
+                    <li className="flex items-start gap-4 bg-white/10 p-4 sm:p-5 rounded-2xl border border-white/10"><CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 shrink-0"/> <span className="text-[14px] sm:text-[15px]">Ust kiyim boshlarini yechintirmagan holda, ust kiyim va tanani paypaslab tekshirish orqali.</span></li>
                   </ul>
-                  <div className="bg-white text-indigo-900 p-5 sm:p-6 rounded-2xl shadow-lg leading-relaxed text-base font-bold relative z-10 text-center border-[3px] border-indigo-200">
-                    <p className="text-lg mb-2 uppercase tracking-wide">Qaror va bayonnoma talab etilmaydi!</p>
-                    <p className="font-medium text-slate-600 text-sm">Bojxona organlari tomonidan soddalashtirilgan tarzda o'tkazilganda yuqoridagilar talab etilmaydi. Agar qonun buzilishi aniqlansa, to'liq ko'rikka o'tiladi va bayonnoma tuziladi.</p>
+                  <div className="bg-white text-indigo-900 p-4 sm:p-6 rounded-2xl shadow-lg leading-relaxed text-base font-bold relative z-10 text-center border-[3px] border-indigo-200">
+                    <p className="text-base sm:text-lg mb-1.5 uppercase tracking-wide">Qaror va bayonnoma talab etilmaydi!</p>
+                    <p className="font-medium text-slate-600 text-[12px] sm:text-sm leading-snug">Bojxona organlari tomonidan soddalashtirilgan tarzda o'tkazilganda yuqoridagilar talab etilmaydi. Agar qonun buzilishi aniqlansa, to'liq ko'rikka o'tiladi va bayonnoma tuziladi.</p>
                   </div>
-                  <div className="mt-6 text-sm text-indigo-200 font-bold flex items-center justify-center gap-2 opacity-90 relative z-10 bg-black/20 p-3 rounded-xl backdrop-blur-sm w-max mx-auto">
-                    <Scale className="w-4 h-4"/> Vazirlar Mahkamasining 2025-yil 6-noyabrdagi 700-son qarori
+                  <div className="mt-5 text-[11px] sm:text-[13px] text-indigo-200 font-bold flex items-center justify-center gap-2 opacity-90 relative z-10 bg-black/20 p-3 rounded-xl backdrop-blur-sm w-full mx-auto text-center leading-snug">
+                    <Scale className="w-4 h-4 shrink-0"/> Vazirlar Mahkamasining 2025-yil 6-noyabrdagi 700-son qarori
                   </div>
                 </div>
               </div>
@@ -289,83 +306,83 @@
                 <GradientHeader title="Xalqaro aeroportda nazorat" subtitle="Umumiy qoidalar va Yo'laklar"/>
                 
                 <Card className="p-0 overflow-hidden shadow-md">
-                  <div className="p-6 bg-slate-900 text-white">
-                    <h3 className="text-xl font-black flex items-center gap-3 mb-4"><Briefcase className="w-6 h-6 text-blue-400"/> Umumiy qoidalar <LawBadge>VM 912-son</LawBadge></h3>
-                    <p className="text-[15px] leading-relaxed font-medium bg-white/10 p-5 rounded-2xl border border-white/20 backdrop-blur-sm">
+                  <div className="p-5 sm:p-6 bg-slate-900 text-white">
+                    <h3 className="text-lg sm:text-xl font-black flex items-center gap-3 mb-4"><Briefcase className="w-6 h-6 text-blue-400"/> Umumiy qoidalar <LawBadge>VM 912-son</LawBadge></h3>
+                    <p className="text-[14px] sm:text-[15px] leading-relaxed font-medium bg-white/10 p-4 sm:p-5 rounded-2xl border border-white/20 backdrop-blur-sm">
                       Davlat chegarasi orqali o'tadigan barcha shaxslar, transport vositalari va tovarlar <HighlightText>chegara, bojxona, sanitariya-karantin, fitosanitariya va veterinariya</HighlightText> nazoratidan o'tkaziladi. Nazorat tartib-taomillari davlat nazorati organlarining o'zaro hamkorligida amalga oshiriladi.
                     </p>
                   </div>
                   
-                  <div className="bg-red-50 border-t-4 border-red-500 p-6 sm:p-8 relative">
-                    <div className="absolute right-0 bottom-0 opacity-5"><CameraOff className="w-40 h-40"/></div>
-                    <h4 className="font-black text-red-900 mb-5 flex items-center gap-3 text-lg relative z-10"><Ban className="w-6 h-6 text-red-600"/> O'tkazish punktida taqiqlanadi:</h4>
-                    <ul className="space-y-4 relative z-10">
-                      <li className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-red-100">
-                        <div className="bg-red-100 p-2 rounded-lg shrink-0"><CameraOff className="w-6 h-6 text-red-600"/></div>
-                        <span className="text-[15px] font-bold text-red-900">Chegara nazorati rahbari va(yoki) bojxona boshlig'i ruxsatisiz foto va videoga suratga olish.</span>
+                  <div className="bg-red-50 border-t-4 border-red-500 p-5 sm:p-8 relative">
+                    <div className="absolute right-0 bottom-0 opacity-5"><CameraOff className="w-32 sm:w-40 h-32 sm:h-40"/></div>
+                    <h4 className="font-black text-red-900 mb-4 sm:mb-5 flex items-center gap-2 sm:gap-3 text-base sm:text-lg relative z-10 leading-snug"><Ban className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 shrink-0"/> O'tkazish punktida taqiqlanadi:</h4>
+                    <ul className="space-y-3 sm:space-y-4 relative z-10">
+                      <li className="flex items-center gap-3 sm:gap-4 bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-red-100">
+                        <div className="bg-red-100 p-2 rounded-lg shrink-0"><CameraOff className="w-5 h-5 text-red-600"/></div>
+                        <span className="text-[13px] sm:text-[15px] font-bold text-red-900 leading-snug">Chegara nazorati rahbari va(yoki) bojxona boshlig'i ruxsatisiz foto va videoga suratga olish.</span>
                       </li>
-                      <li className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-red-100">
-                        <div className="bg-red-100 p-2 rounded-lg shrink-0"><Smartphone className="w-6 h-6 text-red-600"/></div>
-                        <span className="text-[15px] font-bold text-red-900">Nazorat tartib-taomillari tashkil etilishiga xalaqit bersa, mobil va boshqa vositalardan foydalanish.</span>
+                      <li className="flex items-center gap-3 sm:gap-4 bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-red-100">
+                        <div className="bg-red-100 p-2 rounded-lg shrink-0"><Smartphone className="w-5 h-5 text-red-600"/></div>
+                        <span className="text-[13px] sm:text-[15px] font-bold text-red-900 leading-snug">Nazorat tartib-taomillari tashkil etilishiga xalaqit bersa, mobil va boshqa vositalardan foydalanish.</span>
                       </li>
                     </ul>
                   </div>
                 </Card>
 
-                <h3 className="text-2xl font-black text-slate-800 mt-10 mb-5">Ikki yo'lakli nazorat</h3>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-800 mt-8 sm:mt-10 mb-4 sm:mb-5">Ikki yo'lakli nazorat</h3>
                 
-                <div className="grid grid-cols-1 gap-5">
-                  <div className="bg-emerald-50 rounded-[2rem] p-6 sm:p-8 border border-emerald-200 shadow-md relative overflow-hidden">
-                    <div className="absolute -right-6 -bottom-6 opacity-10"><PlaneLanding className="w-48 h-48 text-emerald-800"/></div>
-                    <h4 className="font-black text-emerald-800 text-2xl mb-4 flex items-center gap-3 relative z-10">
-                      <span className="w-4 h-4 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)] animate-pulse"></span> Yashil yo'lak
+                <div className="grid grid-cols-1 gap-4 sm:gap-5">
+                  <div className="bg-emerald-50 rounded-[2rem] p-5 sm:p-8 border border-emerald-200 shadow-md relative overflow-hidden">
+                    <div className="absolute -right-6 -bottom-6 opacity-10"><PlaneLanding className="w-40 sm:w-48 h-40 sm:h-48 text-emerald-800"/></div>
+                    <h4 className="font-black text-emerald-800 text-xl sm:text-2xl mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3 relative z-10">
+                      <span className="w-3 sm:w-4 h-3 sm:h-4 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)] animate-pulse shrink-0"></span> Yashil yo'lak
                     </h4>
-                    <p className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-2 relative z-10 bg-white inline-block px-3 py-1 rounded-md shadow-sm">Uchib kelish joyida</p>
-                    <p className="text-[16px] text-emerald-900 leading-relaxed font-bold relative z-10 bg-white/60 p-5 rounded-2xl border border-emerald-100/50 backdrop-blur-sm mt-2">
+                    <p className="text-[10px] sm:text-xs font-black text-emerald-600 uppercase tracking-widest mb-2 relative z-10 bg-white inline-block px-2 sm:px-3 py-1 rounded-md shadow-sm">Uchib kelish joyida</p>
+                    <p className="text-[14px] sm:text-[16px] text-emerald-900 leading-relaxed font-bold relative z-10 bg-white/60 p-4 sm:p-5 rounded-2xl border border-emerald-100/50 backdrop-blur-sm mt-2">
                       Belgilangan me'yorlardan oshmaydigan tovarlarni <HighlightText>og'zaki deklaratsiyalash</HighlightText> orqali olib o'tish uchun mo'ljallangan joy.
                     </p>
                   </div>
                   
-                  <div className="bg-rose-50 rounded-[2rem] p-6 sm:p-8 border border-rose-200 shadow-md relative overflow-hidden">
-                    <div className="absolute -right-6 -bottom-6 opacity-10"><PlaneLanding className="w-48 h-48 text-rose-800"/></div>
-                    <h4 className="font-black text-rose-800 text-2xl mb-4 flex items-center gap-3 relative z-10">
-                      <span className="w-4 h-4 rounded-full bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.8)]"></span> Qizil yo'lak
+                  <div className="bg-rose-50 rounded-[2rem] p-5 sm:p-8 border border-rose-200 shadow-md relative overflow-hidden">
+                    <div className="absolute -right-6 -bottom-6 opacity-10"><PlaneLanding className="w-40 sm:w-48 h-40 sm:h-48 text-rose-800"/></div>
+                    <h4 className="font-black text-rose-800 text-xl sm:text-2xl mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3 relative z-10">
+                      <span className="w-3 sm:w-4 h-3 sm:h-4 rounded-full bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.8)] shrink-0"></span> Qizil yo'lak
                     </h4>
-                    <p className="text-xs font-black text-rose-600 uppercase tracking-widest mb-2 relative z-10 bg-white inline-block px-3 py-1 rounded-md shadow-sm">Uchib kelish joyida</p>
-                    <p className="text-[16px] text-rose-900 leading-relaxed font-bold relative z-10 bg-white/60 p-5 rounded-2xl border border-rose-100/50 backdrop-blur-sm mt-2">
+                    <p className="text-[10px] sm:text-xs font-black text-rose-600 uppercase tracking-widest mb-2 relative z-10 bg-white inline-block px-2 sm:px-3 py-1 rounded-md shadow-sm">Uchib kelish joyida</p>
+                    <p className="text-[14px] sm:text-[16px] text-rose-900 leading-relaxed font-bold relative z-10 bg-white/60 p-4 sm:p-5 rounded-2xl border border-rose-100/50 backdrop-blur-sm mt-2">
                       Yozma shaklda deklaratsiyalanishi lozim bo'lgan tovarlarni olib o'tish uchun mo'ljallangan. Ushbu yo'lak orqali o'tadigan jismoniy shaxslar <HighlightText>yo'lovchi bojxona deklaratsiyasini</HighlightText> to'ldiradi.
                     </p>
                   </div>
                 </div>
 
-                <Card className="bg-gradient-to-b from-blue-600 to-indigo-800 text-white mt-8 p-6 sm:p-8 border-none shadow-2xl relative overflow-hidden">
+                <Card className="bg-gradient-to-b from-blue-600 to-indigo-800 text-white mt-6 sm:mt-8 p-5 sm:p-8 border-none shadow-2xl relative overflow-hidden px-4 sm:px-8">
                   <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-10"></div>
                   
-                  <div className="flex items-center gap-4 mb-6 relative z-10">
-                    <div className="bg-white text-blue-600 p-3 rounded-2xl shadow-lg"><PlaneTakeoff className="w-8 h-8"/></div>
+                  <div className="flex items-center gap-3 sm:gap-4 mb-5 sm:mb-6 relative z-10">
+                    <div className="bg-white text-blue-600 p-2.5 sm:p-3 rounded-2xl shadow-lg shrink-0"><PlaneTakeoff className="w-6 sm:w-8 h-6 sm:h-8"/></div>
                     <div>
-                      <p className="text-xs font-black text-blue-200 uppercase tracking-widest mb-1">Uchib ketish joyida</p>
-                      <h4 className="font-black text-2xl tracking-tight">Masofaviy bojxona nazorati</h4>
+                      <p className="text-[10px] sm:text-xs font-black text-blue-200 uppercase tracking-widest mb-0.5 sm:mb-1">Uchib ketish joyida</p>
+                      <h4 className="font-black text-xl sm:text-2xl tracking-tight leading-tight">Masofaviy bojxona nazorati</h4>
                     </div>
                   </div>
                   
-                  <div className="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20 mb-6 relative z-10">
-                    <p className="text-[13px] font-bold text-blue-200 mb-4 bg-black/20 inline-block px-3 py-1 rounded-lg">2022 yil 1 iyuldan Toshkent xalqaro aeroportida joriy etilgan.</p>
-                    <ul className="space-y-4 text-[15px] font-medium leading-relaxed">
-                      <li className="flex gap-4 items-start"><CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5"/> <span>Jismoniy shaxslar va ularning qo'l yuklari <strong>DXX aviatsiya xavfsizligi bo'linmalari xodimlari</strong> tomonidan tekshiriladi.</span></li>
-                      <li className="flex gap-4 items-start"><CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5"/> <span>Qonun buzilishi aniqlangandagina (taqiqlangan yoki me'yordan oshgan tovarlar) bojxona xodimlari taklif etiladi va protsessual hujjatlar rasmiylashtiriladi.</span></li>
-                      <li className="flex gap-4 items-start bg-indigo-900/50 p-4 rounded-xl border border-indigo-400/30"><ShieldAlert className="w-6 h-6 text-amber-400 shrink-0 mt-0.5"/> <span className="font-bold">Umumiy holatda jismoniy shaxslar bojxona nazoratidan o'tkazilmaydi.</span></li>
+                  <div className="bg-white/10 backdrop-blur-md p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/20 mb-5 sm:mb-6 relative z-10">
+                    <p className="text-[11px] sm:text-[13px] font-bold text-blue-200 mb-3 sm:mb-4 bg-black/20 inline-block px-2.5 sm:px-3 py-1 rounded-lg">2022 yil 1 iyuldan Toshkent xalqaro aeroportida joriy etilgan.</p>
+                    <ul className="space-y-3 sm:space-y-4 text-[13.5px] sm:text-[15px] font-medium leading-relaxed">
+                      <li className="flex gap-3 sm:gap-4 items-start"><CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 shrink-0 mt-0.5"/> <span>Jismoniy shaxslar va ularning qo'l yuklari <strong>DXX aviatsiya xavfsizligi bo'linmalari xodimlari</strong> tomonidan tekshiriladi.</span></li>
+                      <li className="flex gap-3 sm:gap-4 items-start"><CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 shrink-0 mt-0.5"/> <span>Qonun buzilishi aniqlangandagina (taqiqlangan yoki me'yordan oshgan tovarlar) bojxona xodimlari taklif etiladi va protsessual hujjatlar rasmiylashtiriladi.</span></li>
+                      <li className="flex gap-3 sm:gap-4 items-start bg-indigo-900/50 p-3 sm:p-4 rounded-xl border border-indigo-400/30"><ShieldAlert className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 shrink-0 mt-0.5"/> <span className="font-bold">Umumiy holatda jismoniy shaxslar bojxona nazoratidan o'tkazilmaydi.</span></li>
                     </ul>
                   </div>
 
-                  <div className="bg-white text-slate-800 p-6 rounded-3xl shadow-xl relative z-10">
-                    <p className="text-base font-black mb-4 flex items-center gap-3 text-red-600 uppercase tracking-wide"><AlertOctagon className="w-6 h-6"/> Qachon bojxona nazoratidan o'tkaziladi?</p>
-                    <ul className="space-y-3 text-[15px] font-bold">
-                      <li className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100"><div className="w-2.5 h-2.5 bg-blue-500 rounded-full"/> "Xavfni boshqarish" (XBT) tizimi tomonidan buyurganda;</li>
-                      <li className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100"><div className="w-2.5 h-2.5 bg-blue-500 rounded-full"/> Tezkor xabarlar yoki boshqa tashkilotlardan ma'lumotlar bo'lganda;</li>
-                      <li className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100"><div className="w-2.5 h-2.5 bg-blue-500 rounded-full"/> Shaxsning o'zini tutish harakatlarida qonunchilik buzilishi alomatlari aniqlanganda.</li>
+                  <div className="bg-white text-slate-800 p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl relative z-10">
+                    <p className="text-sm sm:text-base font-black mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3 text-red-600 uppercase tracking-wide leading-tight"><AlertOctagon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0"/> Qachon bojxona nazoratidan o'tkaziladi?</p>
+                    <ul className="space-y-2 sm:space-y-3 text-[13px] sm:text-[15px] font-bold">
+                      <li className="flex items-center gap-3 bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-100 leading-snug"><div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-blue-500 rounded-full shrink-0"/> "Xavfni boshqarish" (XBT) tizimi tomonidan buyurganda;</li>
+                      <li className="flex items-center gap-3 bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-100 leading-snug"><div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-blue-500 rounded-full shrink-0"/> Tezkor xabarlar yoki boshqa tashkilotlardan ma'lumotlar bo'lganda;</li>
+                      <li className="flex items-center gap-3 bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-100 leading-snug"><div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-blue-500 rounded-full shrink-0"/> Shaxsning o'zini tutish harakatlarida qonunchilik buzilishi alomatlari aniqlanganda.</li>
                     </ul>
-                    <div className="mt-4"><LawBadge>VM 2017 yil 11 oktabrdagi 814-son qarori</LawBadge></div>
+                    <div className="mt-3 sm:mt-4 text-center sm:text-left"><LawBadge>VM 2017 yil 11 oktabrdagi 814-son qarori</LawBadge></div>
                   </div>
                 </Card>
               </div>
@@ -383,10 +400,10 @@
               <div className="space-y-6">
                 <GradientHeader title="Yo'lovchi bojxona deklaratsiyasi" subtitle="Deklaratsiya to'ldirilishi shart bo'lgan barcha holatlar"/>
                 
-                <Card className="border-t-[8px] border-t-emerald-500 shadow-xl bg-slate-900 text-white p-6 sm:p-8 overflow-hidden relative">
-                  <div className="absolute right-0 top-0 opacity-10"><FileText className="w-48 h-48"/></div>
-                  <h3 className="text-2xl font-black mb-6 flex items-center gap-3 relative z-10"><FileSignature className="w-8 h-8 text-emerald-400"/> Quyidagi holatlarda to'ldiriladi:</h3>
-                  <div className="grid grid-cols-1 gap-4 relative z-10">
+                <Card className="border-t-[8px] border-t-emerald-500 shadow-xl bg-slate-900 text-white p-5 sm:p-8 overflow-hidden relative px-4 sm:px-8">
+                  <div className="absolute right-0 top-0 opacity-10"><FileText className="w-40 h-40 sm:w-48 sm:h-48"/></div>
+                  <h3 className="text-xl sm:text-2xl font-black mb-5 sm:mb-6 flex items-center gap-2 sm:gap-3 relative z-10"><FileSignature className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-400 shrink-0"/> Quyidagi holatlarda to'ldiriladi:</h3>
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4 relative z-10">
                     {[
                       "Tovarlarni olib kirishning bojxona to'lovlari undirilmaydigan cheklangan me'yorlaridan oshadigan tovarlarga;",
                       "Yashash joyi o'zgarganda shaxsiy mol-mulki bo'lgan tovarlarga (avtotransport bundan mustasno);",
@@ -395,47 +412,47 @@
                       "Alohida kuzatib boriladigan bagajda olib o'tiladigan notijorat maqsadlardagi tovarlarga;",
                       "Tegishli taqiqlar va (yoki) cheklovlar belgilangan tovarlarga."
                     ].map((text, i) => (
-                      <motion.div variants={itemVariants} key={i} className="flex items-start gap-4 bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
-                        <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-500 text-white text-sm font-black shrink-0 shadow-md">{i+1}</span>
-                        <span className="text-[15px] text-slate-100 leading-relaxed font-medium pt-1">{text}</span>
+                      <motion.div whileTap={{ scale: 0.98 }} key={i} className="flex items-start gap-3 sm:gap-4 bg-white/10 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-sm">
+                        <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-emerald-500 text-white text-xs sm:text-sm font-black shrink-0 shadow-md mt-0.5 sm:mt-0">{i+1}</span>
+                        <span className="text-[13.5px] sm:text-[15px] text-slate-100 leading-relaxed font-medium">{text}</span>
                       </motion.div>
                     ))}
                     
                     {/* Special Mobile Rule */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] mt-4 border-2 border-indigo-400">
-                      <div className="flex items-center justify-center w-16 h-16 rounded-[20px] bg-white/20 shrink-0 backdrop-blur-md shadow-inner"><Smartphone className="w-8 h-8 text-white"/></div>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] mt-3 sm:mt-4 border-2 border-indigo-400">
+                      <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[20px] bg-white/20 shrink-0 backdrop-blur-md shadow-inner"><Smartphone className="w-6 h-6 sm:w-8 sm:h-8 text-white"/></div>
                       <div>
-                        <span className="text-base sm:text-lg leading-snug font-black block mb-2 uppercase tracking-wide">Mobil qurilmalarga, cheklangan me'yorlardan qat'iy nazar YBD to'ldiriladi!</span>
-                        <span className="text-xs sm:text-sm text-indigo-100 font-bold bg-black/30 px-3 py-1.5 rounded-lg inline-block">(O'zbekiston hududida sotib olinib UZIMEI tizimida ro'yxatdan o'tganlar mustasno)</span>
+                        <span className="text-[14px] sm:text-base lg:text-lg leading-snug font-black block mb-2 uppercase tracking-wide">Mobil qurilmalarga, cheklangan me'yorlardan qat'iy nazar YBD to'ldiriladi!</span>
+                        <span className="text-[11px] sm:text-xs lg:text-sm text-indigo-100 font-bold bg-black/30 px-2.5 sm:px-3 py-1.5 rounded-lg inline-block">(O'zbekiston hududida sotib olinib UZIMEI tizimida ro'yxatdan o'tganlar mustasno)</span>
                       </div>
                     </div>
                   </div>
                 </Card>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6">
-                  <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-md border border-slate-100 flex flex-col items-center text-center relative overflow-hidden">
-                    <div className="absolute top-0 w-full h-3 bg-blue-500"></div>
-                    <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-5 border-4 border-white shadow-md">
-                      <Users className="w-10 h-10"/>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mt-5 sm:mt-6">
+                  <div className="bg-white rounded-[2rem] p-5 sm:p-8 shadow-md border border-slate-100 flex flex-col items-center text-center relative overflow-hidden px-4">
+                    <div className="absolute top-0 w-full h-2 sm:h-3 bg-blue-500"></div>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4 sm:mb-5 border-4 border-white shadow-md">
+                      <Users className="w-8 h-8 sm:w-10 sm:h-10"/>
                     </div>
-                    <h4 className="font-black text-slate-800 text-2xl mb-3">Yoshga doir talab</h4>
-                    <p className="text-[15px] text-slate-600 leading-relaxed font-medium bg-slate-50 p-4 rounded-2xl w-full border border-slate-100">
+                    <h4 className="font-black text-slate-800 text-xl sm:text-2xl mb-2 sm:mb-3">Yoshga doir talab</h4>
+                    <p className="text-[13px] sm:text-[15px] text-slate-600 leading-relaxed font-medium bg-slate-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl w-full border border-slate-100">
                       Deklaratsiya <HighlightText>16 yoshga to'lgan</HighlightText> shaxslar tomonidan bojxona chegarasini kesib o'tayotganda tovar(lar) bilan bir vaqtda taqdim etiladi.
                     </p>
                   </div>
                   
-                  <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-md border border-slate-100 flex flex-col items-center text-center relative overflow-hidden">
-                    <div className="absolute top-0 w-full h-3 bg-amber-500"></div>
-                    <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mb-5 border-4 border-white shadow-md">
-                      <Clock className="w-10 h-10"/>
+                  <div className="bg-white rounded-[2rem] p-5 sm:p-8 shadow-md border border-slate-100 flex flex-col items-center text-center relative overflow-hidden px-4">
+                    <div className="absolute top-0 w-full h-2 sm:h-3 bg-amber-500"></div>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mb-4 sm:mb-5 border-4 border-white shadow-md">
+                      <Clock className="w-8 h-8 sm:w-10 sm:h-10"/>
                     </div>
-                    <h4 className="font-black text-slate-800 text-2xl mb-3">Javobgarlik / Muddat</h4>
-                    <p className="text-[15px] text-slate-600 leading-relaxed font-medium bg-slate-50 p-4 rounded-2xl w-full border border-slate-100">
+                    <h4 className="font-black text-slate-800 text-xl sm:text-2xl mb-2 sm:mb-3">Javobgarlik / Muddat</h4>
+                    <p className="text-[13px] sm:text-[15px] text-slate-600 leading-relaxed font-medium bg-slate-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl w-full border border-slate-100">
                       Elektron deklaratsiyani taqdim etgan shaxs javobgar. U <HighlightText>30 kalendar kun</HighlightText> ichida bojxona organiga taqdim etilmasa, avtomatik tarzda bekor qilinadi.
                     </p>
                   </div>
                 </div>
-                <div className="mt-6 flex justify-center"><LawBadge>Adliya vazirligi tomonidan 2014 yil 5 avgustda ro'yxatdan o'tkazildi (Ro'yxat: 2606)</LawBadge></div>
+                <div className="mt-5 sm:mt-6 flex justify-center text-center"><LawBadge>Adliya vazirligi tomonidan 2014 yil 5 avgustda ro'yxatdan o'tkazildi (Ro'yxat: 2606)</LawBadge></div>
               </div>
             )
           },
@@ -451,34 +468,34 @@
               <div className="space-y-6">
                 <GradientHeader title="Tovarlarni olib kirish qoidalari" subtitle="Havo transporti orqali"/>
                 
-                <div className="bg-gradient-to-br from-emerald-600 to-teal-800 text-white p-8 sm:p-10 rounded-[2.5rem] flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden mt-4">
+                <div className="bg-gradient-to-br from-emerald-600 to-teal-800 text-white p-6 sm:p-10 rounded-[2.5rem] flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden mt-4">
                   <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] opacity-10"></div>
-                  <PlaneLanding className="absolute -left-10 -bottom-10 w-64 h-64 text-white/5"/>
+                  <PlaneLanding className="absolute -left-10 -bottom-10 w-48 sm:w-64 h-48 sm:h-64 text-white/5"/>
                   
-                  <div className="bg-white/20 backdrop-blur-xl px-5 py-2 rounded-full mb-6 border border-white/30 inline-flex items-center gap-3 shadow-lg">
-                    <span className="w-3 h-3 bg-emerald-300 rounded-full animate-pulse shadow-[0_0_10px_#6ee7b7]"></span>
-                    <span className="text-sm font-black uppercase tracking-widest text-white">Bojsiz olib kirish normasi</span>
+                  <div className="bg-white/20 backdrop-blur-xl px-4 py-1.5 sm:px-5 sm:py-2 rounded-full mb-4 sm:mb-6 border border-white/30 inline-flex items-center gap-2 sm:gap-3 shadow-lg">
+                    <span className="w-2 h-2 sm:w-3 sm:h-3 bg-emerald-300 rounded-full animate-pulse shadow-[0_0_10px_#6ee7b7]"></span>
+                    <span className="text-[11px] sm:text-sm font-black uppercase tracking-widest text-white">Bojsiz olib kirish normasi</span>
                   </div>
                   
-                  <span className="text-7xl sm:text-8xl font-black tracking-tighter drop-shadow-xl mb-8">$1000</span>
+                  <span className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter drop-shadow-xl mb-6 sm:mb-8">$1000</span>
                   
-                  <div className="w-full bg-black/30 p-5 rounded-3xl backdrop-blur-md border border-white/20 flex flex-col sm:flex-row gap-4 items-center sm:text-left text-center shadow-inner">
-                    <Clock className="w-10 h-10 text-emerald-300 shrink-0"/>
+                  <div className="w-full bg-black/30 p-4 sm:p-5 rounded-2xl sm:rounded-3xl backdrop-blur-md border border-white/20 flex flex-col sm:flex-row gap-3 sm:gap-4 items-center sm:text-left text-center shadow-inner">
+                    <Clock className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-300 shrink-0"/>
                     <div>
-                      <p className="text-xs font-black uppercase text-emerald-300 tracking-widest mb-1.5">Asosiy shart</p>
-                      <p className="text-[15px] font-bold text-white leading-relaxed">Mazkur normadan foydalanish uchun jismoniy shaxs xorijda kamida <HighlightText>3 kun</HighlightText> bo'lishi yoki 1 oy davomida O'zbekiston chegarasini <HighlightText>3 martadan kam</HighlightText> kesib o'tgan bo'lishi kerak.</p>
+                      <p className="text-[10px] sm:text-xs font-black uppercase text-emerald-300 tracking-widest mb-1 sm:mb-1.5">Asosiy shart</p>
+                      <p className="text-[13px] sm:text-[15px] font-bold text-white leading-relaxed">Mazkur normadan foydalanish uchun jismoniy shaxs xorijda kamida <HighlightText>3 kun</HighlightText> bo'lishi yoki 1 oy davomida O'zbekiston chegarasini <HighlightText>3 martadan kam</HighlightText> kesib o'tgan bo'lishi kerak.</p>
                     </div>
                   </div>
-                  <div className="mt-4 w-full text-right"><LawBadge>VM 244-son (2025)</LawBadge></div>
+                  <div className="mt-3 sm:mt-4 w-full text-right"><LawBadge>VM 244-son (2025)</LawBadge></div>
                 </div>
 
-                <Card className="border-[3px] border-slate-100 shadow-xl rounded-[2rem] p-6 sm:p-8 mt-8">
-                  <h3 className="text-2xl font-black text-slate-800 mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
-                    <div className="p-3 bg-blue-50 rounded-xl"><Package className="w-7 h-7 text-blue-600"/></div>
+                <Card className="border-[3px] border-slate-100 shadow-xl rounded-[2rem] p-5 sm:p-8 mt-6 sm:mt-8 px-3 sm:px-8">
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-800 mb-5 sm:mb-6 flex items-center gap-2 sm:gap-3 border-b border-slate-100 pb-3 sm:pb-4 px-2">
+                    <div className="p-2 sm:p-3 bg-blue-50 rounded-xl shrink-0"><Package className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600"/></div>
                     Ayrim tovarlar normalari
                   </h3>
                   
-                  <div className="grid grid-cols-1 gap-3 mb-6">
+                  <div className="grid grid-cols-1 gap-2.5 sm:gap-3 mb-5 sm:mb-6">
                     {[
                       { label: "Alkohol (shu jumladan pivo)", val: "2 litr" },
                       { label: "Sigaret", val: "200 dona" },
@@ -486,46 +503,46 @@
                       { label: "Tamaki (tabak)", val: "100 gr" },
                       { label: "Atir va ifor suvlari", val: "3 dona (max 300 ml)" }
                     ].map((item, i) => (
-                      <div key={i} className="flex justify-between items-center bg-slate-50 border border-slate-200 p-4 rounded-2xl hover:bg-slate-100 transition-colors">
-                        <span className="font-bold text-slate-700 text-[15px]">{item.label}</span> 
-                        <span className="font-black text-slate-900 text-base px-4 py-1.5 rounded-xl bg-white shadow-sm border border-slate-200">{item.val}</span>
+                      <div key={i} className="flex justify-between items-center bg-slate-50 border border-slate-200 p-3 sm:p-4 rounded-xl sm:rounded-2xl hover:bg-slate-100 transition-colors gap-2">
+                        <span className="font-bold text-slate-700 text-[13px] sm:text-[15px] leading-tight">{item.label}</span> 
+                        <span className="font-black text-slate-900 text-[13px] sm:text-base px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white shadow-sm border border-slate-200 whitespace-nowrap">{item.val}</span>
                       </div>
                     ))}
                     
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-blue-50 border-2 border-blue-200 p-4 sm:p-5 rounded-2xl mt-2 gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white rounded-lg shadow-sm"><Smartphone className="w-6 h-6 text-blue-600"/></div>
-                        <span className="font-black text-blue-900 text-[16px]">Mobil Telefonlar <LawBadge>VM-463</LawBadge></span> 
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-blue-50 border-2 border-blue-200 p-3 sm:p-5 rounded-xl sm:rounded-2xl mt-1.5 sm:mt-2 gap-2 sm:gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm shrink-0"><Smartphone className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600"/></div>
+                        <span className="font-black text-blue-900 text-[14px] sm:text-[16px] leading-tight">Mobil Telefonlar <LawBadge>VM-463</LawBadge></span> 
                       </div>
-                      <span className="font-black text-lg px-5 py-2 rounded-xl bg-blue-600 text-white shadow-lg text-center">2 dona</span>
+                      <span className="font-black text-[15px] sm:text-lg px-4 sm:px-5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-blue-600 text-white shadow-lg text-center sm:text-right w-full sm:w-auto">2 dona</span>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-amber-50 border-2 border-amber-200 p-4 sm:p-5 rounded-2xl mt-2 gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white rounded-lg shadow-sm"><Activity className="w-6 h-6 text-amber-600"/></div>
-                        <span className="font-black text-amber-900 text-[16px]">Biologik faol qo'shimchalar (BFQ)</span> 
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-amber-50 border-2 border-amber-200 p-3 sm:p-5 rounded-xl sm:rounded-2xl mt-1.5 sm:mt-2 gap-2 sm:gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm shrink-0"><Activity className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600"/></div>
+                        <span className="font-black text-amber-900 text-[14px] sm:text-[16px] leading-tight">Biologik faol qo'shimchalar (BFQ)</span> 
                       </div>
-                      <span className="font-black text-[13px] sm:text-sm text-amber-800 bg-white px-4 py-2 rounded-xl border border-amber-200 text-center shadow-sm">10 xil tur, max 3kg (har biri 1 qadoq)</span>
+                      <span className="font-black text-[12px] sm:text-[13px] lg:text-sm text-amber-800 bg-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-amber-200 text-center shadow-sm w-full sm:w-auto">10 xil tur, max 3kg (har biri 1 qadoq)</span>
                     </div>
                   </div>
                   
-                  <div className="p-5 rounded-2xl bg-red-50 flex items-start gap-4 border border-red-200 shadow-inner">
-                    <div className="p-2 bg-red-100 rounded-xl shrink-0 mt-0.5"><Ban className="w-6 h-6 text-red-600"/></div>
-                    <p className="text-[15px] text-red-900 font-bold leading-relaxed">
+                  <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-red-50 flex items-start gap-3 sm:gap-4 border border-red-200 shadow-inner">
+                    <div className="p-1.5 sm:p-2 bg-red-100 rounded-lg shrink-0 mt-0.5"><Ban className="w-5 h-5 sm:w-6 sm:h-6 text-red-600"/></div>
+                    <p className="text-[13px] sm:text-[15px] text-red-900 font-bold leading-relaxed">
                       Alkohol va tamaki mahsulotlarini <HighlightText>21 yoshga to'lmagan shaxslarga</HighlightText> va pochta jo'natmalari orqali olib kirish qat'iyan taqiqlanadi.
                     </p>
                   </div>
                 </Card>
 
-                <div className="bg-slate-900 rounded-[2.5rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden mt-8">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-red-600 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+                <div className="bg-slate-900 rounded-[2.5rem] p-5 sm:p-10 shadow-2xl relative overflow-hidden mt-6 sm:mt-8 px-4 sm:px-10">
+                  <div className="absolute top-0 right-0 w-48 sm:w-64 h-48 sm:h-64 bg-red-600 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
                   
-                  <h3 className="text-2xl sm:text-3xl font-black text-red-500 mb-8 flex items-center gap-4 relative z-10 border-b border-slate-700 pb-5">
-                    <div className="p-3 bg-red-500/20 rounded-2xl"><ShieldAlert className="w-8 h-8 text-red-400"/></div>
+                  <h3 className="text-xl sm:text-3xl font-black text-red-500 mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4 relative z-10 border-b border-slate-700 pb-4 sm:pb-5">
+                    <div className="p-2 sm:p-3 bg-red-500/20 rounded-xl sm:rounded-2xl shrink-0"><ShieldAlert className="w-6 h-6 sm:w-8 sm:h-8 text-red-400"/></div>
                     Taqiqlangan Tovarlar
                   </h3>
                   
-                  <div className="grid gap-3.5 relative z-10">
+                  <div className="grid gap-3 sm:gap-3.5 relative z-10">
                     {[
                       { text: "Nikotinli va nikotinsiz suyuqliklar hamda elektron sigaretalar", law: "O'RQ-844 Qonun 37-moddasi" },
                       { text: "Uchuvchisiz uchish qurilmalari (Dronlar)", law: "VM 658-son qarori", highlight: true },
@@ -541,11 +558,11 @@
                       { text: "Polimer (plastik) idishdagi alkohol (pivo va vinodan tashqari)", law: "O'RQ-302 Qonun" },
                       { text: "Ilgari foydalanilgan generatorlar, transformatorlar (D toifa)", law: "PQ-4422 qarori" },
                     ].map((item, i) => (
-                      <motion.div variants={itemVariants} key={i} className={`flex items-start gap-4 p-4 rounded-2xl border font-medium text-[15px] ${item.highlight ? 'bg-red-500/20 border-red-500/50 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'} transition-colors`}>
-                        <div className={`w-3 h-3 rounded-full mt-1.5 shrink-0 ${item.highlight ? 'bg-red-500 shadow-[0_0_10px_#ef4444] animate-pulse' : 'bg-red-500/50'}`}></div>
+                      <motion.div whileTap={{ scale: 0.98 }} key={i} className={`flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl border font-medium text-[13.5px] sm:text-[15px] ${item.highlight ? 'bg-red-500/20 border-red-500/50 text-white shadow-lg' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'} transition-colors`}>
+                        <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full mt-1.5 shrink-0 ${item.highlight ? 'bg-red-500 shadow-[0_0_10px_#ef4444] animate-pulse' : 'bg-red-500/50'}`}></div>
                         <div className="flex flex-col">
-                          <span className={`${item.highlight ? 'font-black' : 'font-bold'}`}>{item.text}</span>
-                          <span className={`text-[11px] font-black uppercase tracking-wider mt-1.5 ${item.highlight ? 'text-red-300' : 'text-slate-500'}`}>{item.law}</span>
+                          <span className={`${item.highlight ? 'font-black' : 'font-bold'} leading-snug`}>{item.text}</span>
+                          <span className={`text-[9px] sm:text-[11px] font-black uppercase tracking-wider mt-1 sm:mt-1.5 ${item.highlight ? 'text-red-300' : 'text-slate-500'}`}>{item.law}</span>
                         </div>
                       </motion.div>
                     ))}
@@ -566,48 +583,48 @@
               <div className="space-y-6">
                 <GradientHeader title="Tovarlarni olib chiqish qoidalari" subtitle="Hujjat bo'yicha to'liq tartib"/>
                 
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white p-8 sm:p-10 rounded-[2.5rem] flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden mt-4">
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white p-6 sm:p-10 rounded-[2.5rem] flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden mt-4">
                   <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-10"></div>
-                  <PlaneTakeoff className="absolute -left-10 -bottom-10 w-64 h-64 opacity-5"/>
+                  <PlaneTakeoff className="absolute -left-10 -bottom-10 w-48 sm:w-64 h-48 sm:h-64 opacity-5"/>
                   
-                  <div className="bg-white/20 backdrop-blur-xl px-5 py-2 rounded-full mb-6 border border-white/30 inline-flex items-center gap-3 shadow-lg">
-                    <span className="w-3 h-3 bg-blue-300 rounded-full animate-pulse shadow-[0_0_10px_#93c5fd]"></span>
-                    <span className="text-sm font-black uppercase tracking-widest text-blue-50">Deklaratsiyasiz eksport normasi</span>
+                  <div className="bg-white/20 backdrop-blur-xl px-4 sm:px-5 py-1.5 sm:py-2 rounded-full mb-5 sm:mb-6 border border-white/30 inline-flex items-center gap-2 sm:gap-3 shadow-lg">
+                    <span className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-300 rounded-full animate-pulse shadow-[0_0_10px_#93c5fd]"></span>
+                    <span className="text-[11px] sm:text-sm font-black uppercase tracking-widest text-blue-50">Deklaratsiyasiz eksport normasi</span>
                   </div>
                   
-                  <span className="text-7xl sm:text-8xl font-black tracking-tighter drop-shadow-xl mb-4">$5000</span>
+                  <span className="text-6xl sm:text-8xl font-black tracking-tighter drop-shadow-xl mb-3 sm:mb-4">$5000</span>
                   
-                  <div className="bg-black/30 p-4 rounded-2xl backdrop-blur-md border border-white/20 shadow-inner">
-                     <p className="text-[15px] font-bold text-blue-100">Shu summaga ekvivalent miqdorgacha tovarlarni Yo'lovchi bojxona deklaratsiyasisiz olib chiqish ruxsat etiladi.</p>
+                  <div className="bg-black/30 p-3 sm:p-4 rounded-xl sm:rounded-2xl backdrop-blur-md border border-white/20 shadow-inner">
+                     <p className="text-[13px] sm:text-[15px] font-bold text-blue-100 leading-snug">Shu summaga ekvivalent miqdorgacha tovarlarni Yo'lovchi bojxona deklaratsiyasisiz olib chiqish ruxsat etiladi.</p>
                   </div>
                 </div>
 
-                <Card className="border-t-[8px] border-t-amber-400 mt-8 rounded-[2rem] p-6 sm:p-8 shadow-xl">
-                  <h3 className="text-2xl font-black text-slate-800 mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
-                    <div className="p-3 bg-amber-50 rounded-xl"><Box className="w-7 h-7 text-amber-600"/></div>
+                <Card className="border-t-[6px] sm:border-t-[8px] border-t-amber-400 mt-6 sm:mt-8 rounded-[2rem] p-5 sm:p-8 shadow-xl px-4 sm:px-8">
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-800 mb-5 sm:mb-6 flex items-center gap-2 sm:gap-3 border-b border-slate-100 pb-3 sm:pb-4">
+                    <div className="p-2 sm:p-3 bg-amber-50 rounded-xl shrink-0"><Box className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600"/></div>
                     Qimmatbaho metallar va Zargarlik
                   </h3>
                   <div className="space-y-4">
-                    <div className="bg-amber-50 border-2 border-amber-100 p-5 sm:p-6 rounded-2xl shadow-sm">
-                      <h4 className="font-black text-amber-900 mb-3 flex items-center gap-3 text-lg"><CheckCircle className="w-6 h-6 text-emerald-500 shrink-0"/> O'lchovli yombilar va tangalar</h4>
-                      <p className="text-[15px] text-amber-900/80 leading-relaxed font-medium pl-9">
+                    <div className="bg-amber-50 border-2 border-amber-100 p-4 sm:p-6 rounded-2xl shadow-sm">
+                      <h4 className="font-black text-amber-900 mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3 text-base sm:text-lg leading-tight"><CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 shrink-0"/> O'lchovli yombilar va tangalar</h4>
+                      <p className="text-[13.5px] sm:text-[15px] text-amber-900/80 leading-relaxed font-medium pl-7 sm:pl-9">
                         Markaziy bank sertifikati bilan: <HighlightText>cheklovsiz</HighlightText> olib chiqiladi. Agar ularning qiymati $5000 ekvivalentidan oshsa <strong>Yo'lovchi bojxona deklaratsiyasi</strong> to'ldirilishi shart. <LawBadge>VM 244-son</LawBadge>
                       </p>
                     </div>
                     
-                    <div className="bg-amber-50 border-2 border-amber-100 p-5 sm:p-6 rounded-2xl shadow-sm">
-                      <h4 className="font-black text-amber-900 mb-4 flex items-center gap-3 text-lg"><CheckCircle className="w-6 h-6 text-emerald-500 shrink-0"/> Tayyor zargarlik buyumlari</h4>
-                      <div className="flex flex-col sm:flex-row gap-4 pl-9">
-                        <div className="flex-1 bg-white p-4 rounded-xl border border-amber-200 text-center shadow-md">
-                          <span className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Kumushdan yasalgan</span>
-                          <span className="text-2xl font-black text-slate-700">200g <span className="text-sm font-bold text-slate-400">gacha</span></span>
+                    <div className="bg-amber-50 border-2 border-amber-100 p-4 sm:p-6 rounded-2xl shadow-sm">
+                      <h4 className="font-black text-amber-900 mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3 text-base sm:text-lg leading-tight"><CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 shrink-0"/> Tayyor zargarlik buyumlari</h4>
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pl-0 sm:pl-9">
+                        <div className="flex-1 bg-white p-3 sm:p-4 rounded-xl border border-amber-200 text-center shadow-md">
+                          <span className="block text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest mb-1 sm:mb-1.5">Kumushdan yasalgan</span>
+                          <span className="text-xl sm:text-2xl font-black text-slate-700">200g <span className="text-xs sm:text-sm font-bold text-slate-400">gacha</span></span>
                         </div>
-                        <div className="flex-1 bg-white p-4 rounded-xl border border-amber-200 text-center shadow-md">
-                          <span className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Oltin va boshqa metallardan</span>
-                          <span className="text-2xl font-black text-amber-600">65g <span className="text-sm font-bold text-amber-400">gacha</span></span>
+                        <div className="flex-1 bg-white p-3 sm:p-4 rounded-xl border border-amber-200 text-center shadow-md">
+                          <span className="block text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest mb-1 sm:mb-1.5">Oltin va boshqa metallardan</span>
+                          <span className="text-xl sm:text-2xl font-black text-amber-600">65g <span className="text-xs sm:text-sm font-bold text-amber-400">gacha</span></span>
                         </div>
                       </div>
-                      <p className="text-[14px] text-amber-800 text-center font-bold mt-5 bg-white py-3 rounded-xl border border-amber-100">
+                      <p className="text-[12.5px] sm:text-[14px] text-amber-800 text-center font-bold mt-4 sm:mt-5 bg-white p-2.5 sm:py-3 rounded-xl border border-amber-100 leading-snug">
                         Shu normalar doirasida deklaratsiyasiz ruxsat etiladi. Bundan oshsa deklaratsiya asosida olib chiqiladi. <LawBadge>PF-5721-son</LawBadge>
                       </p>
                     </div>
@@ -615,21 +632,21 @@
                 </Card>
 
                 <AlertDanger title="Qat'iyan Taqiqlangan Tovarlar" icon={Ban}>
-                  <p className="text-[15px] font-medium leading-relaxed">
+                  <p className="text-[13.5px] sm:text-[15px] font-medium leading-relaxed">
                     <HighlightText>Ellik yil muqaddam va undan oldin</HighlightText> yaratilgan madaniy boyliklar, davlat reyestridagi madaniy boyliklar, muzey va arxivlarda saqlanayotgan madaniy boyliklarni O'zbekiston hududidan olib chiqish taqiqlanadi!
                   </p>
-                  <div className="mt-3"><LawBadge>678-I-son Qonun 8-moddasi</LawBadge></div>
+                  <div className="mt-2 sm:mt-3"><LawBadge>678-I-son Qonun 8-moddasi</LawBadge></div>
                 </AlertDanger>
 
-                <div className="bg-slate-900 border-none text-white p-6 sm:p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden mt-8">
-                  <div className="absolute top-0 left-0 w-64 h-64 bg-amber-500 rounded-full blur-[100px] opacity-10 pointer-events-none"></div>
+                <div className="bg-slate-900 border-none text-white p-5 sm:p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden mt-6 sm:mt-8 px-4 sm:px-10">
+                  <div className="absolute top-0 left-0 w-48 sm:w-64 h-48 sm:h-64 bg-amber-500 rounded-full blur-[100px] opacity-10 pointer-events-none"></div>
                   
-                  <h3 className="text-2xl sm:text-3xl font-black text-amber-400 mb-8 flex items-center gap-4 relative z-10 border-b border-slate-700 pb-5">
-                    <div className="p-3 bg-amber-500/20 rounded-2xl"><FileSignature className="w-8 h-8 text-amber-300"/></div>
+                  <h3 className="text-xl sm:text-3xl font-black text-amber-400 mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4 relative z-10 border-b border-slate-700 pb-4 sm:pb-5 leading-tight">
+                    <div className="p-2 sm:p-3 bg-amber-500/20 rounded-xl sm:rounded-2xl shrink-0"><FileSignature className="w-6 h-6 sm:w-8 sm:h-8 text-amber-300"/></div>
                     Ruxsatnoma talab etiladiganlar
                   </h3>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 relative z-10">
                     {[
                       { t: "Madaniy boyliklarni olib chiqish", l: "VM 131-son qarori" },
                       { t: "Veterinariya nazoratidagi tovarlar", l: "VM 139, 43-son qarorlari" },
@@ -641,13 +658,13 @@
                       { t: "Ekologik xavfli mahsulotlar va chiqindilar", l: "VM 43, 75-son" },
                       { t: "Axborotni kriptografik muhofaza qilish vositalari", l: "PQ-614-son qarori" }
                     ].map((item, i) => (
-                      <motion.div variants={itemVariants} key={i} className="flex flex-col gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/10 backdrop-blur-sm shadow-inner">
-                        <div className="flex items-start gap-3">
-                          <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                          <span className="font-bold text-[15px] text-slate-200 leading-snug">{item.t}</span>
+                      <motion.div whileTap={{ scale: 0.98 }} key={i} className="flex flex-col gap-1.5 sm:gap-2 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/10 backdrop-blur-sm shadow-inner">
+                        <div className="flex items-start gap-2.5 sm:gap-3">
+                          <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0 mt-0.5" />
+                          <span className="font-bold text-[13.5px] sm:text-[15px] text-slate-200 leading-snug">{item.t}</span>
                         </div>
-                        <div className="pl-8">
-                          <span className="text-[10px] font-black text-amber-400/80 uppercase tracking-widest bg-black/30 px-2 py-1 rounded-md inline-block">{item.l}</span>
+                        <div className="pl-6 sm:pl-8">
+                          <span className="text-[9px] sm:text-[10px] font-black text-amber-400/80 uppercase tracking-widest bg-black/30 px-2 py-1 rounded-md inline-block mt-1">{item.l}</span>
                         </div>
                       </motion.div>
                     ))}
@@ -668,55 +685,55 @@
               <div className="space-y-6">
                 <GradientHeader title="Naqd valyutani olib kirish va chiqish" subtitle="To'liq huquqiy tartib"/>
                 
-                <div className="grid grid-cols-1 gap-6 mt-4">
-                  <Card className="bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-300 shadow-xl overflow-hidden relative group">
-                    <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-100 rounded-full group-hover:scale-150 transition-transform duration-700 ease-out z-0 opacity-50"></div>
-                    <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                      <div className="w-20 h-20 bg-emerald-500 text-white rounded-[1.2rem] flex items-center justify-center shrink-0 shadow-[0_10px_20px_rgba(16,185,129,0.3)]">
-                         <ArrowDownRight className="w-10 h-10"/>
+                <div className="grid grid-cols-1 gap-5 sm:gap-6 mt-4">
+                  <Card className="bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-300 shadow-xl overflow-hidden relative group p-5 sm:p-7 px-4">
+                    <div className="absolute -right-10 -bottom-10 w-40 sm:w-48 h-40 sm:h-48 bg-emerald-100 rounded-full group-hover:scale-150 transition-transform duration-700 ease-out z-0 opacity-50"></div>
+                    <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-500 text-white rounded-[1rem] sm:rounded-[1.2rem] flex items-center justify-center shrink-0 shadow-[0_10px_20px_rgba(16,185,129,0.3)]">
+                         <ArrowDownRight className="w-8 h-8 sm:w-10 sm:h-10"/>
                       </div>
                       <div>
-                        <h3 className="font-black text-emerald-800 uppercase tracking-widest text-sm mb-2">Olib kirish (Import)</h3>
-                        <p className="text-emerald-600 font-black text-4xl sm:text-5xl mb-3 tracking-tighter">CHEKLANMAGAN</p>
-                        <p className="text-[15px] text-slate-700 font-medium leading-relaxed bg-white/60 p-3 rounded-xl border border-emerald-100/50 backdrop-blur-sm">O'zbekiston hududiga naqd valyuta mablag'larini olib kirish cheklovsiz amalga oshiriladi.</p>
+                        <h3 className="font-black text-emerald-800 uppercase tracking-widest text-xs sm:text-sm mb-1 sm:mb-2">Olib kirish (Import)</h3>
+                        <p className="text-emerald-600 font-black text-3xl sm:text-4xl lg:text-5xl mb-2 sm:mb-3 tracking-tighter">CHEKLANMAGAN</p>
+                        <p className="text-[13.5px] sm:text-[15px] text-slate-700 font-medium leading-relaxed bg-white/60 p-2.5 sm:p-3 rounded-xl border border-emerald-100/50 backdrop-blur-sm">O'zbekiston hududiga naqd valyuta mablag'larini olib kirish cheklovsiz amalga oshiriladi.</p>
                       </div>
                     </div>
                   </Card>
                   
-                  <Card className="bg-gradient-to-br from-blue-50 to-white border-2 border-blue-300 shadow-xl overflow-hidden relative group">
-                    <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-blue-100 rounded-full group-hover:scale-150 transition-transform duration-700 ease-out z-0 opacity-50"></div>
-                    <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                      <div className="w-20 h-20 bg-blue-600 text-white rounded-[1.2rem] flex items-center justify-center shrink-0 shadow-[0_10px_20px_rgba(37,99,235,0.3)]">
-                         <ArrowUpRight className="w-10 h-10"/>
+                  <Card className="bg-gradient-to-br from-blue-50 to-white border-2 border-blue-300 shadow-xl overflow-hidden relative group p-5 sm:p-7 px-4">
+                    <div className="absolute -right-10 -bottom-10 w-40 sm:w-48 h-40 sm:h-48 bg-blue-100 rounded-full group-hover:scale-150 transition-transform duration-700 ease-out z-0 opacity-50"></div>
+                    <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-600 text-white rounded-[1rem] sm:rounded-[1.2rem] flex items-center justify-center shrink-0 shadow-[0_10px_20px_rgba(37,99,235,0.3)]">
+                         <ArrowUpRight className="w-8 h-8 sm:w-10 sm:h-10"/>
                       </div>
                       <div>
-                        <h3 className="font-black text-blue-800 uppercase tracking-widest text-sm mb-2">Olib chiqish (Eksport)</h3>
-                        <div className="flex items-baseline gap-2 mb-3">
+                        <h3 className="font-black text-blue-800 uppercase tracking-widest text-xs sm:text-sm mb-1 sm:mb-2">Olib chiqish (Eksport)</h3>
+                        <div className="flex items-baseline gap-2 mb-2 sm:mb-3">
                           <p className="text-blue-600 font-black text-4xl sm:text-5xl tracking-tighter">100 mln</p>
-                          <span className="text-xl font-bold text-blue-800">so'm</span>
+                          <span className="text-lg sm:text-xl font-bold text-blue-800">so'm</span>
                         </div>
-                        <p className="text-[15px] text-slate-700 font-medium leading-relaxed bg-white/60 p-3 rounded-xl border border-blue-100/50 backdrop-blur-sm">Shu summaga teng yoki oshmaydigan miqdorda respublikadan tashqariga olib chiqishga ruxsat etiladi.</p>
+                        <p className="text-[13.5px] sm:text-[15px] text-slate-700 font-medium leading-relaxed bg-white/60 p-2.5 sm:p-3 rounded-xl border border-blue-100/50 backdrop-blur-sm">Shu summaga teng yoki oshmaydigan miqdorda respublikadan tashqariga olib chiqishga ruxsat etiladi.</p>
                       </div>
                     </div>
                   </Card>
                 </div>
 
-                <div className="mt-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-[2.5rem] p-8 sm:p-10 text-center text-white shadow-2xl relative overflow-hidden">
+                <div className="mt-8 sm:mt-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-[2.5rem] p-6 sm:p-10 text-center text-white shadow-2xl relative overflow-hidden">
                   <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
                   
                   <div className="relative z-10">
-                    <div className="w-20 h-20 mx-auto bg-white/20 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-md shadow-inner border border-white/30">
-                      <FileSignature className="w-10 h-10 text-white"/>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-white/20 rounded-2xl flex items-center justify-center mb-5 sm:mb-6 backdrop-blur-md shadow-inner border border-white/30">
+                      <FileSignature className="w-8 h-8 sm:w-10 sm:h-10 text-white"/>
                     </div>
-                    <h3 className="text-lg font-black text-amber-100 uppercase tracking-widest mb-4">Majburiy Deklaratsiyalash Me'yori</h3>
+                    <h3 className="text-base sm:text-lg font-black text-amber-100 uppercase tracking-widest mb-3 sm:mb-4 px-2">Majburiy Deklaratsiyalash Me'yori</h3>
                     
-                    <div className="inline-block bg-white text-orange-600 px-8 py-4 rounded-3xl font-black text-4xl sm:text-5xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] mb-6 border-4 border-amber-200">
+                    <div className="inline-block bg-white text-orange-600 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl sm:rounded-3xl font-black text-3xl sm:text-5xl shadow-[0_10px_30px_rgba(0,0,0,0.2)] mb-5 sm:mb-6 border-4 border-amber-200">
                       &gt; 100 mln so'm
                     </div>
                     
-                    <div className="bg-black/20 p-5 sm:p-6 rounded-2xl backdrop-blur-sm border border-white/10">
-                      <p className="text-[15px] sm:text-[16px] text-white font-medium leading-relaxed">
-                        Shu ekvivalentdan ortiq naqd milliy va (yoki) chet el valyutasi <strong className="text-amber-200 bg-black/20 px-2 py-0.5 rounded mx-1">Yo'lovchi bojxona deklaratsiyasini</strong> to'ldirish va bojxona organi xodimiga taqdim etish orqali bojxona nazoratidan o'tkaziladi.
+                    <div className="bg-black/20 p-4 sm:p-6 rounded-2xl backdrop-blur-sm border border-white/10">
+                      <p className="text-[13.5px] sm:text-[16px] text-white font-medium leading-relaxed">
+                        Shu ekvivalentdan ortiq naqd milliy va (yoki) chet el valyutasi <strong className="text-amber-200 bg-black/20 px-2 py-0.5 rounded mx-1 whitespace-nowrap inline-block mt-1 sm:mt-0">Yo'lovchi bojxona deklaratsiyasini</strong> to'ldirish va bojxona organi xodimiga taqdim etish orqali bojxona nazoratidan o'tkaziladi.
                       </p>
                     </div>
                   </div>
@@ -739,31 +756,31 @@
                 <GradientHeader title="Tovar maqsadi va Bojxona to'lovlari" subtitle="Hujjatdagi barcha to'lov turlari va qat'iy ro'yxatlar"/>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Card className="border-t-[6px] border-t-emerald-400 bg-gradient-to-b from-emerald-50/50 to-white">
-                    <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-4 shadow-sm"><Users className="w-6 h-6"/></div>
-                    <h3 className="font-black text-slate-800 mb-2 text-xl">Shaxsiy ehtiyojlar uchun</h3>
-                    <p className="text-[15px] text-slate-600 font-medium leading-relaxed">Jismoniy shaxslar tomonidan shaxsiy, oilaviy ehtiyojlari uchun mo'ljallangan hamda tadbirkorlik yoki tijorat bilan bog'liq bo'lmagan tovarlar.</p>
+                  <Card className="border-t-[6px] border-t-emerald-400 bg-gradient-to-b from-emerald-50/50 to-white px-4 sm:px-6">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-sm"><Users className="w-5 h-5 sm:w-6 sm:h-6"/></div>
+                    <h3 className="font-black text-slate-800 mb-1.5 sm:mb-2 text-lg sm:text-xl">Shaxsiy ehtiyojlar uchun</h3>
+                    <p className="text-[13.5px] sm:text-[15px] text-slate-600 font-medium leading-relaxed">Jismoniy shaxslar tomonidan shaxsiy, oilaviy ehtiyojlari uchun mo'ljallangan hamda tadbirkorlik yoki tijorat bilan bog'liq bo'lmagan tovarlar.</p>
                   </Card>
-                  <Card className="border-t-[6px] border-t-blue-500 bg-gradient-to-b from-blue-50/50 to-white">
-                    <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-sm"><Briefcase className="w-6 h-6"/></div>
-                    <h3 className="font-black text-slate-800 mb-2 text-xl">Tijorat maqsadi uchun</h3>
-                    <p className="text-[15px] text-slate-600 font-medium leading-relaxed mb-4">Ishlab chiqarish, tadbirkorlik yoki boshqa tijorat faoliyati uchun mo'ljallangan tovarlar.</p>
-                    <div className="text-xs font-bold text-blue-800 bg-blue-100/60 p-2.5 rounded-lg flex gap-2 items-start border border-blue-200">
-                      <Info className="w-4 h-4 shrink-0 mt-0.5"/> 
-                      <span>Mezonlar: xususiyati, miqdori, olib o'tish takroriyligi, safar holatlari.</span>
+                  <Card className="border-t-[6px] border-t-blue-500 bg-gradient-to-b from-blue-50/50 to-white px-4 sm:px-6">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-sm"><Briefcase className="w-5 h-5 sm:w-6 sm:h-6"/></div>
+                    <h3 className="font-black text-slate-800 mb-1.5 sm:mb-2 text-lg sm:text-xl">Tijorat maqsadi uchun</h3>
+                    <p className="text-[13.5px] sm:text-[15px] text-slate-600 font-medium leading-relaxed mb-3 sm:mb-4">Ishlab chiqarish, tadbirkorlik yoki boshqa tijorat faoliyati uchun mo'ljallangan tovarlar.</p>
+                    <div className="text-[11px] sm:text-xs font-bold text-blue-800 bg-blue-100/60 p-2 sm:p-2.5 rounded-lg flex gap-2 items-start border border-blue-200">
+                      <Info className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 mt-0.5"/> 
+                      <span className="leading-snug">Mezonlar: xususiyati, miqdori, olib o'tish takroriyligi, safar holatlari.</span>
                     </div>
                   </Card>
                 </div>
 
-                <Card className="border-[3px] border-red-100 shadow-lg mt-6">
-                  <h3 className="text-xl font-black text-red-700 mb-5 flex items-center gap-3 border-b border-red-100 pb-4">
-                    <div className="p-2.5 bg-red-100 rounded-xl"><Ban className="w-6 h-6 text-red-600"/></div>
+                <Card className="border-[3px] border-red-100 shadow-lg mt-5 sm:mt-6 px-3 sm:px-7">
+                  <h3 className="text-lg sm:text-xl font-black text-red-700 mb-4 sm:mb-5 flex items-center gap-2 sm:gap-3 border-b border-red-100 pb-3 sm:pb-4 leading-tight">
+                    <div className="p-2 sm:p-2.5 bg-red-100 rounded-xl shrink-0"><Ban className="w-5 h-5 sm:w-6 sm:h-6 text-red-600"/></div>
                     Shaxsiy ehtiyojga KIRMAYDIGAN tovarlar (10 tur)
                   </h3>
-                  <p className="text-[15px] text-slate-700 font-medium mb-5 bg-red-50 p-4 rounded-xl border border-red-100 leading-relaxed">
+                  <p className="text-[13px] sm:text-[15px] text-slate-700 font-medium mb-4 sm:mb-5 bg-red-50 p-3 sm:p-4 rounded-xl border border-red-100 leading-relaxed">
                     Quyidagi tovarlar har qanday holatda <strong>tijorat maqsadi</strong> deb baholanadi va tegishli bojxona rasmiylashtiruvidan o'tadi:
                   </p>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[14px] text-slate-800 font-bold">
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-[13px] sm:text-[14px] text-slate-800 font-bold">
                     {[
                       "1. Ichki yonuv dvigatellari.",
                       "2. Markaziy isitish qozonlari.",
@@ -776,85 +793,88 @@
                       "9. Namoyish qilish maqsadlariga mo'ljallangan modellar.",
                       "10. Pul yoki jeton билан ишловчи ўйин автоматлари."
                     ].map((text, i) => (
-                      <li key={i} className="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:bg-red-50 hover:border-red-200 transition-colors leading-snug">
+                      <li key={i} className="bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-200 hover:bg-red-50 hover:border-red-200 transition-colors leading-snug">
                         {text}
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-5 text-right"><LawBadge>PQ-4508-son qarori</LawBadge></div>
+                  <div className="mt-4 sm:mt-5 text-right"><LawBadge>PQ-4508-son qarori</LawBadge></div>
                 </Card>
 
-                <div className="bg-slate-900 rounded-[2.5rem] p-6 sm:p-8 text-white shadow-2xl mt-8 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-500 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+                <div className="bg-slate-900 rounded-[2.5rem] p-5 sm:p-8 text-white shadow-2xl mt-6 sm:mt-8 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-48 sm:w-64 h-48 sm:h-64 bg-emerald-500 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
                   
-                  <h3 className="text-2xl font-black text-white mb-8 flex items-center gap-3 relative z-10 border-b border-slate-700 pb-5">
-                    <DollarSign className="w-8 h-8 text-emerald-400 bg-emerald-400/20 p-1.5 rounded-xl"/> Bojxona to'lovlarini undirish
+                  <h3 className="text-xl sm:text-2xl font-black text-white mb-6 sm:mb-8 flex items-center gap-2 sm:gap-3 relative z-10 border-b border-slate-700 pb-4 sm:pb-5 leading-tight">
+                    <DollarSign className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-400 bg-emerald-400/20 p-1.5 rounded-xl shrink-0"/> Bojxona to'lovlarini undirish
                   </h3>
                   
-                  <div className="bg-slate-800/80 backdrop-blur-md p-6 rounded-2xl mb-6 border border-slate-700 relative z-10 shadow-inner">
-                    <h4 className="font-black text-emerald-300 mb-5 text-lg uppercase tracking-wider flex items-center gap-3"><Package className="w-6 h-6"/> Notijorat maqsadlar учун (YBT)</h4>
-                    <div className="flex flex-col sm:flex-row items-center gap-6">
-                      <div className="text-6xl font-black text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]">30%</div>
-                      <div className="text-[15px] text-slate-300 font-medium flex-1 bg-slate-900 p-5 rounded-xl border border-slate-700 leading-relaxed">
-                        Tovar qiymatidan, lekin har 1 kg uchun <span className="text-white bg-emerald-500 px-2 py-1 rounded-md font-black whitespace-nowrap shadow-sm">3$ dan kam emas</span> miqdorida undiriladi.
-                        <p className="text-[12px] text-emerald-200 mt-3 font-bold bg-emerald-900/30 p-2.5 rounded-lg border border-emerald-800/50">
+                  <div className="bg-slate-800/80 backdrop-blur-md p-4 sm:p-6 rounded-2xl mb-5 sm:mb-6 border border-slate-700 relative z-10 shadow-inner">
+                    <h4 className="font-black text-emerald-300 mb-4 sm:mb-5 text-base sm:text-lg uppercase tracking-wider flex items-center gap-2 sm:gap-3 leading-snug"><Package className="w-5 h-5 sm:w-6 sm:h-6 shrink-0"/> Notijorat maqsadlar учун (YBT)</h4>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                      <div className="text-5xl sm:text-6xl font-black text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]">30%</div>
+                      <div className="text-[13.5px] sm:text-[15px] text-slate-300 font-medium flex-1 bg-slate-900 p-4 sm:p-5 rounded-xl border border-slate-700 leading-relaxed w-full">
+                        Tovar qiymatidan, lekin har 1 kg uchun <span className="text-white bg-emerald-500 px-2 py-1 rounded-md font-black whitespace-nowrap shadow-sm mt-1 sm:mt-0 inline-block">3$ dan kam emas</span> miqdorida undiriladi.
+                        <p className="text-[11px] sm:text-[12px] text-emerald-200 mt-3 font-bold bg-emerald-900/30 p-2.5 rounded-lg border border-emerald-800/50 leading-snug">
                           * Bojsiz olib kirish normasidan ($1000) ortgan qismiga nisbatan undiriladi. Alkohol va tamaki mahsulotlariga yagona bojxona to'lovi ikki baravar miqdorda undiriladi.
                         </p>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-slate-800/80 backdrop-blur-md p-6 rounded-2xl border border-slate-700 relative z-10 shadow-inner">
-                    <h4 className="font-black text-blue-300 mb-5 text-lg uppercase tracking-wider flex items-center gap-3"><Briefcase className="w-6 h-6"/> Tijorat tovarlari uchun:</h4>
-                    <div className="space-y-4">
-                      <div className="bg-slate-900 p-5 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 border border-slate-700">
-                        <span className="text-[15px] text-slate-300 font-black uppercase tracking-widest bg-slate-800 px-4 py-2 rounded-lg inline-block w-max">Qiymati &lt; 30 BHM</span>
+                  <div className="bg-slate-800/80 backdrop-blur-md p-4 sm:p-6 rounded-2xl border border-slate-700 relative z-10 shadow-inner">
+                    <h4 className="font-black text-blue-300 mb-4 sm:mb-5 text-base sm:text-lg uppercase tracking-wider flex items-center gap-2 sm:gap-3 leading-snug"><Briefcase className="w-5 h-5 sm:w-6 sm:h-6 shrink-0"/> Tijorat tovarlari uchun:</h4>
+                    <div className="space-y-3 sm:space-y-4">
+                      <div className="bg-slate-900 p-4 sm:p-5 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3 sm:gap-4 border border-slate-700">
+                        <span className="text-[13px] sm:text-[15px] text-slate-300 font-black uppercase tracking-widest bg-slate-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg inline-block w-max">&lt; 30 BHM</span>
                         <div className="text-left sm:text-right">
-                          <span className="text-lg font-black text-blue-400 block mb-1">Bojxona kirim orderi orqali</span>
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">(notarif choralari qo'llanilmagan holda)</span>
+                          <span className="text-base sm:text-lg font-black text-blue-400 block mb-0.5 sm:mb-1 leading-tight">Bojxona kirim orderi orqali</span>
+                          <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest leading-snug">(notarif choralari qo'llanilmagan holda)</span>
                         </div>
                       </div>
-                      <div className="bg-slate-900 p-5 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 border border-slate-700">
-                        <span className="text-[15px] text-slate-300 font-black uppercase tracking-widest bg-slate-800 px-4 py-2 rounded-lg inline-block w-max">Qiymati &gt; 30 BHM</span>
+                      <div className="bg-slate-900 p-4 sm:p-5 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3 sm:gap-4 border border-slate-700">
+                        <span className="text-[13px] sm:text-[15px] text-slate-300 font-black uppercase tracking-widest bg-slate-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg inline-block w-max">&gt; 30 BHM</span>
                         <div className="text-left sm:text-right">
-                          <span className="text-lg font-black text-amber-400 block mb-1">Bojxona yuk декларацияси orqali</span>
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">(notarif choralar qo'llanilgan holda)</span>
+                          <span className="text-base sm:text-lg font-black text-amber-400 block mb-0.5 sm:mb-1 leading-tight">Bojxona yuk декларацияси orqali</span>
+                          <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest leading-snug">(notarif choralar qo'llanilgan holda)</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <Card className="border-[3px] border-amber-100 shadow-xl overflow-hidden p-0 mt-8 rounded-[2.5rem]">
-                  <div className="bg-amber-100/50 p-6 sm:p-8 border-b border-amber-200 flex items-center gap-4">
-                    <div className="p-3 bg-amber-500 text-white rounded-xl shadow-md"><Clock className="w-8 h-8"/></div>
-                    <h3 className="text-2xl font-black text-amber-900 uppercase tracking-tight">Vaqtincha saqlash tartibi</h3>
+                <Card className="border-[3px] border-amber-100 shadow-xl overflow-hidden p-0 mt-6 sm:mt-8 rounded-[2.5rem]">
+                  <div className="bg-amber-100/50 p-5 sm:p-8 border-b border-amber-200 flex items-center gap-3 sm:gap-4">
+                    <div className="p-2.5 sm:p-3 bg-amber-500 text-white rounded-xl shadow-md shrink-0"><Clock className="w-6 h-6 sm:w-8 sm:h-8"/></div>
+                    <h3 className="text-xl sm:text-2xl font-black text-amber-900 uppercase tracking-tight leading-tight">Vaqtincha saqlash tartibi</h3>
                   </div>
                   
-                  <div className="p-6 sm:p-8 bg-white">
-                    <div className="flex flex-col sm:flex-row gap-5 mb-8">
-                      <div className="flex-1 bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center shadow-sm">
-                        <div className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Oddiy tovarlar va hujjatlar</div>
-                        <div className="text-4xl font-black text-slate-800">30 <span className="text-xl text-slate-400 font-bold uppercase">kun</span></div>
+                  <div className="p-5 sm:p-8 bg-white">
+                    <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 mb-6 sm:mb-8">
+                      <div className="flex-1 bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200 text-center shadow-sm">
+                        <div className="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5 sm:mb-2">Oddiy tovarlar va hujjatlar</div>
+                        <div className="text-3xl sm:text-4xl font-black text-slate-800">30 <span className="text-lg sm:text-xl text-slate-400 font-bold uppercase">kun</span></div>
                       </div>
-                      <div className="flex-1 bg-rose-50 p-6 rounded-2xl border border-rose-200 text-center shadow-sm">
-                        <div className="text-xs font-black text-rose-500 uppercase tracking-widest mb-2">Tez buziladigan tovarlar</div>
-                        <div className="text-4xl font-black text-rose-600">2 <span className="text-xl text-rose-400 font-bold uppercase">kun</span></div>
+                      <div className="flex-1 bg-rose-50 p-5 sm:p-6 rounded-2xl border border-rose-200 text-center shadow-sm">
+                        <div className="text-[10px] sm:text-xs font-black text-rose-500 uppercase tracking-widest mb-1.5 sm:mb-2">Tez buziladigan tovarlar</div>
+                        <div className="text-3xl sm:text-4xl font-black text-rose-600">2 <span className="text-lg sm:text-xl text-rose-400 font-bold uppercase">kun</span></div>
                       </div>
                     </div>
 
-                    <div className="bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500 rounded-full blur-[80px] opacity-20"></div>
-                      <p className="text-base font-black text-white mb-6 flex items-center gap-3 relative z-10 border-b border-slate-700 pb-4"><DollarSign className="w-6 h-6 text-amber-400"/> Saqlash to'lovi <span className="font-medium text-slate-400 text-sm">(har bir kalendar kun uchun, har 100 kg gacha og'irlikka)</span></p>
+                    <div className="bg-slate-900 p-5 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-amber-500 rounded-full blur-[80px] opacity-20"></div>
+                      <p className="text-[15px] sm:text-base font-black text-white mb-5 sm:mb-6 flex items-start sm:items-center flex-col sm:flex-row gap-2 sm:gap-3 relative z-10 border-b border-slate-700 pb-3 sm:pb-4 leading-tight">
+                        <span className="flex items-center gap-2"><DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 shrink-0"/> Saqlash to'lovi</span> 
+                        <span className="font-medium text-slate-400 text-[12px] sm:text-sm">(har bir kalendar kun uchun, har 100 kg gacha og'irlikka)</span>
+                      </p>
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[15px] relative z-10">
-                        <div className="flex justify-between items-center bg-slate-800 p-4 rounded-xl border border-slate-700"><span className="text-slate-300 font-bold">1-5 kun</span><span className="font-black text-white bg-blue-500 px-3 py-1 rounded-lg">BHMning 5%</span></div>
-                        <div className="flex justify-between items-center bg-slate-800 p-4 rounded-xl border border-slate-700"><span className="text-slate-300 font-bold">6-15 kun</span><span className="font-black text-white bg-indigo-500 px-3 py-1 rounded-lg">BHMning 7%</span></div>
-                        <div className="flex justify-between items-center bg-slate-800 p-4 rounded-xl border border-slate-700"><span className="text-slate-300 font-bold">Qolgan kunlar</span><span className="font-black text-white bg-purple-500 px-3 py-1 rounded-lg">BHMning 10%</span></div>
-                        <div className="flex justify-between items-center bg-red-900/30 p-4 rounded-xl border border-red-500/30"><span className="text-red-300 font-bold">Tez buziladigan (har kuni)</span><span className="font-black text-white bg-red-500 px-3 py-1 rounded-lg shadow-[0_0_10px_rgba(239,68,68,0.5)]">BHMning 15%</span></div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-[13.5px] sm:text-[15px] relative z-10">
+                        <div className="flex justify-between items-center bg-slate-800 p-3.5 sm:p-4 rounded-xl border border-slate-700"><span className="text-slate-300 font-bold">1-5 kun</span><span className="font-black text-white bg-blue-500 px-2.5 sm:px-3 py-1 rounded-lg">BHMning 5%</span></div>
+                        <div className="flex justify-between items-center bg-slate-800 p-3.5 sm:p-4 rounded-xl border border-slate-700"><span className="text-slate-300 font-bold">6-15 kun</span><span className="font-black text-white bg-indigo-500 px-2.5 sm:px-3 py-1 rounded-lg">BHMning 7%</span></div>
+                        <div className="flex justify-between items-center bg-slate-800 p-3.5 sm:p-4 rounded-xl border border-slate-700"><span className="text-slate-300 font-bold">Qolgan kunlar</span><span className="font-black text-white bg-purple-500 px-2.5 sm:px-3 py-1 rounded-lg">BHMning 10%</span></div>
+                        <div className="flex justify-between items-center bg-red-900/30 p-3.5 sm:p-4 rounded-xl border border-red-500/30"><span className="text-red-300 font-bold">Tez buziladigan (har kuni)</span><span className="font-black text-white bg-red-500 px-2.5 sm:px-3 py-1 rounded-lg shadow-[0_0_10px_rgba(239,68,68,0.5)]">BHMning 15%</span></div>
                       </div>
                     </div>
-                    <div className="mt-5 text-center"><LawBadge>VM 102-son qarori</LawBadge></div>
+                    <div className="mt-4 sm:mt-5 text-center"><LawBadge>VM 102-son qarori</LawBadge></div>
                   </div>
                 </Card>
               </div>
@@ -872,32 +892,32 @@
               <div className="space-y-6">
                 <GradientHeader title="Fuqaro postda harakatlanganda xodimning vazifalari" subtitle="TMB va Qonunbuzarlikda qadamma-qadam yo'riqnoma"/>
                 
-                <Card className="border-[3px] border-blue-100 bg-gradient-to-br from-white to-blue-50/50 shadow-xl mt-6 p-6 sm:p-8">
-                  <h3 className="font-black text-xl text-slate-800 mb-6 flex items-center gap-3 border-b border-slate-200 pb-4">
-                    <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg">1</div>
+                <Card className="border-[3px] border-blue-100 bg-gradient-to-br from-white to-blue-50/50 shadow-xl mt-5 sm:mt-6 p-5 sm:p-8 px-4 sm:px-8">
+                  <h3 className="font-black text-lg sm:text-xl text-slate-800 mb-5 sm:mb-6 flex items-center gap-3 border-b border-slate-200 pb-3 sm:pb-4 leading-tight">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shrink-0">1</div>
                     Birinchi harakat (Ko'rik)
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="bg-red-50 p-5 rounded-2xl border-2 border-red-200 shadow-sm relative overflow-hidden group">
-                      <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-red-100 rounded-full group-hover:scale-[2] transition-transform duration-500"></div>
-                      <h4 className="font-black text-red-800 mb-3 flex items-center gap-2 text-lg relative z-10"><span className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse"></span> "Qizil" yo'lak</h4>
-                      <p className="text-[15px] text-red-900 leading-relaxed font-medium relative z-10 bg-white/60 p-3 rounded-xl backdrop-blur-sm">Yo'lovchini YBD asosida so'roqdan o'tkazib so'ng, bojxona ko'rigini амалга ошириш <LawBadge>BK 195-modda</LawBadge>. <br/><span className="bg-red-100 text-red-800 font-bold px-2 py-1 rounded inline-block mt-2 text-xs">Bunda xolislar ishtiroki shart bo'lmaydi!</span></p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                    <div className="bg-red-50 p-4 sm:p-5 rounded-2xl border-2 border-red-200 shadow-sm relative overflow-hidden group">
+                      <div className="absolute -right-4 -bottom-4 w-16 sm:w-20 h-16 sm:h-20 bg-red-100 rounded-full group-hover:scale-[2] transition-transform duration-500"></div>
+                      <h4 className="font-black text-red-800 mb-2 sm:mb-3 flex items-center gap-2 text-base sm:text-lg relative z-10 leading-tight"><span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse shrink-0"></span> "Qizil" yo'lak</h4>
+                      <p className="text-[13.5px] sm:text-[15px] text-red-900 leading-relaxed font-medium relative z-10 bg-white/60 p-3 rounded-xl backdrop-blur-sm">Yo'lovchini YBD asosida so'roqdan o'tkazib so'ng, bojxona ko'rigini амалга ошириш <LawBadge>BK 195-modda</LawBadge>. <br/><span className="bg-red-100 text-red-800 font-bold px-2 py-1 rounded inline-block mt-2 text-[10px] sm:text-xs">Bunda xolislar ishtiroki shart bo'lmaydi!</span></p>
                     </div>
-                    <div className="bg-emerald-50 p-5 rounded-2xl border-2 border-emerald-200 shadow-sm relative overflow-hidden group">
-                      <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-100 rounded-full group-hover:scale-[2] transition-transform duration-500"></div>
-                      <h4 className="font-black text-emerald-800 mb-3 flex items-center gap-2 text-lg relative z-10"><span className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse"></span> "Yashil" yo'lak</h4>
-                      <p className="text-[15px] text-emerald-900 leading-relaxed font-medium relative z-10 bg-white/60 p-3 rounded-xl backdrop-blur-sm">Yo'lovchiga tegishli yuklarni uni og'zaki so'rovdan o'tkazmasdan амалга ошириш mumkin. <LawBadge>VM 814-son</LawBadge></p>
+                    <div className="bg-emerald-50 p-4 sm:p-5 rounded-2xl border-2 border-emerald-200 shadow-sm relative overflow-hidden group">
+                      <div className="absolute -right-4 -bottom-4 w-16 sm:w-20 h-16 sm:h-20 bg-emerald-100 rounded-full group-hover:scale-[2] transition-transform duration-500"></div>
+                      <h4 className="font-black text-emerald-800 mb-2 sm:mb-3 flex items-center gap-2 text-base sm:text-lg relative z-10 leading-tight"><span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse shrink-0"></span> "Yashil" yo'lak</h4>
+                      <p className="text-[13.5px] sm:text-[15px] text-emerald-900 leading-relaxed font-medium relative z-10 bg-white/60 p-3 rounded-xl backdrop-blur-sm">Yo'lovchiga tegishli yuklarni uni og'zaki so'rovdan o'tkazmasdan амалга ошириш mumkin. <LawBadge>VM 814-son</LawBadge></p>
                     </div>
                   </div>
                 </Card>
 
-                <div className="mt-10">
-                  <h3 className="font-black text-2xl text-rose-600 mb-8 flex items-center gap-4 bg-rose-50 p-5 rounded-2xl border border-rose-200 shadow-sm">
-                    <div className="w-12 h-12 bg-rose-600 text-white rounded-xl flex items-center justify-center shadow-lg shrink-0">2</div>
+                <div className="mt-8 sm:mt-10 px-1 sm:px-0">
+                  <h3 className="font-black text-xl sm:text-2xl text-rose-600 mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4 bg-rose-50 p-4 sm:p-5 rounded-2xl border border-rose-200 shadow-sm leading-tight">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-rose-600 text-white rounded-xl flex items-center justify-center shadow-lg shrink-0">2</div>
                     Huquqbuzarlik aniqlanganda qadamma-qadam
                   </h3>
                   
-                  <div className="relative before:absolute before:inset-0 before:ml-[2.2rem] sm:before:ml-[2.7rem] before:-translate-x-px before:h-[95%] before:w-1.5 before:bg-slate-200 before:rounded-full space-y-8 pb-10">
+                  <div className="relative before:absolute before:inset-0 before:ml-[1.7rem] sm:before:ml-[2.7rem] before:-translate-x-px before:h-[95%] before:w-1 sm:before:w-1.5 before:bg-slate-200 before:rounded-full space-y-6 sm:space-y-8 pb-8 sm:pb-10 pl-2 sm:pl-0">
                     
                     {[
                       { 
@@ -906,7 +926,7 @@
                         desc: "Huquqbuzarga aybini va huquqlarini (advokat, tarjimon) tushuntirish.",
                         law: "MJtK 294-moddasi",
                         extra: "Advokat shart bo'lgan holatlar: voyaga yetmaganlar, chet el fuqarosi, tilni bilmaydigan yoki o'zini himoya қилишга qiynaladigan shaxslar (JPK 51). Tilni bilmasa, tarjimon ta'minlanib bayonnoma rasmiylashtiriladi (JPK 71-72).",
-                        icon: <UserCheck className="w-6 h-6"/>
+                        icon: <UserCheck className="w-5 h-5 sm:w-6 sm:h-6"/>
                       },
                       { 
                         s: "2.2", 
@@ -914,7 +934,7 @@
                         desc: "Shaxsni ushlab turish bayonnomasi tuziladi.",
                         law: "MJtK 285-288-moddalari",
                         extra: "Shaxsni 3 soat ushlab turish mumkin (aniqlangan vaqtdan boshlanadi).",
-                        icon: <Clock className="w-6 h-6"/>
+                        icon: <Clock className="w-5 h-5 sm:w-6 sm:h-6"/>
                       },
                       { 
                         s: "2.3", 
@@ -922,21 +942,21 @@
                         desc: "Tovarlarni xolislar ishtirokida ko'zdan kechirish va bayonnoma tuzish. Huquqbuzar ma'lumotlari, tovar tasnifi yoziladi.",
                         law: "JPK 135-137, 139-141-moddalari",
                         alert: "Albatta fotosuratlar ilova qilinishi SHART!",
-                        icon: <CameraOff className="w-6 h-6"/>
+                        icon: <CameraOff className="w-5 h-5 sm:w-6 sm:h-6"/>
                       },
                       { 
                         s: "2.4", 
                         title: "Huquqbuzarlik to'g'risida bayonnoma", 
                         desc: "Aniqlangan huquqbuzarlik to'g'risidagi bayonnoma rasmiylashtiriladi.",
                         law: "MJtK 279-281-moddalari",
-                        icon: <FileSignature className="w-6 h-6"/>
+                        icon: <FileSignature className="w-5 h-5 sm:w-6 sm:h-6"/>
                       },
                       { 
                         s: "2.5", 
                         title: "Tushuntirish xatlari", 
                         desc: "Huquqbuzar va xolislarning tushuntirish xatlarini olish. Xatda shaxsga doir ma'lumotlar va ko'rsatmalar yoziladi.",
                         extra: "Agar fuqaroga olib kirish me'yoridagi tovarlari qayтариб берилса, bu haqida tushuntirish xatida va alohida ro'yxat tuzib (nomi/soni) kiritilishi lozim. Huquqbuzar o'z ko'rsatmalarini qo'lyozma tarzida berish istagini bildirsa ruxsat berish kerak. Turli bosqichlarda bir necha xolis ishtirok etsa ulardan ham xat olinadi.",
-                        icon: <FileText className="w-6 h-6"/>
+                        icon: <FileText className="w-5 h-5 sm:w-6 sm:h-6"/>
                       },
                       { 
                         s: "2.6", 
@@ -944,39 +964,39 @@
                         desc: "Huquqbuzardan huquqlari bilan tanishtirilganligi to'g'risida tilxat olinadi.",
                         law: "MJtK 294-moddasi",
                         extra: "Shu bilan birga agar tadbirkorlik subyekti bo'lsa va 1-marta sodir etayotgan bo'lsa, bojxona rasmiylashtiruvi amalga oshirilishi mumkinligi haqida tilxat (MJtK 271-modda 11-bandi).",
-                        icon: <Fingerprint className="w-6 h-6"/>
+                        icon: <Fingerprint className="w-5 h-5 sm:w-6 sm:h-6"/>
                       },
                       { 
                         s: "2.7", 
                         title: "Saqlov", 
                         desc: "Tovarlar saqlovini ta'minlash.",
                         law: "VM 200-son qarori",
-                        icon: <Archive className="w-6 h-6"/>
+                        icon: <Archive className="w-5 h-5 sm:w-6 sm:h-6"/>
                       }
                     ].map((step, i) => (
-                      <motion.div variants={itemVariants} key={i} className="relative pl-14 sm:pl-20 group">
-                        <div className="absolute -left-1 sm:-left-1 top-0 bg-white border-4 border-slate-200 text-slate-500 w-12 h-12 sm:w-14 sm:h-14 rounded-full flex justify-center items-center font-black shadow-md text-sm sm:text-base group-hover:border-blue-500 group-hover:text-blue-600 group-hover:scale-110 transition-all duration-300 z-10">
+                      <motion.div whileTap={{ scale: 0.98 }} variants={itemVariants} key={i} className="relative pl-12 sm:pl-20 group">
+                        <div className="absolute -left-1 sm:-left-1 top-0 bg-white border-4 border-slate-200 text-slate-500 w-10 h-10 sm:w-14 sm:h-14 rounded-full flex justify-center items-center font-black shadow-md text-[11px] sm:text-base group-hover:border-blue-500 group-hover:text-blue-600 group-hover:scale-110 transition-all duration-300 z-10">
                           {step.s}
                         </div>
-                        <div className="bg-white p-5 sm:p-6 rounded-[2rem] shadow-sm border border-slate-100 group-hover:shadow-lg group-hover:border-blue-200 transition-all duration-300">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 border-b border-slate-100 pb-3">
-                            <h4 className="font-black text-slate-800 text-lg flex items-center gap-3">
-                              <div className="text-slate-400 group-hover:text-blue-500 transition-colors">{step.icon}</div>
+                        <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] shadow-sm border border-slate-100 group-hover:shadow-lg group-hover:border-blue-200 transition-all duration-300">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-2 sm:mb-3 border-b border-slate-100 pb-2 sm:pb-3">
+                            <h4 className="font-black text-slate-800 text-[15px] sm:text-lg flex items-center gap-2 sm:gap-3 leading-snug">
+                              <div className="text-slate-400 group-hover:text-blue-500 transition-colors shrink-0">{step.icon}</div>
                               {step.title}
                             </h4>
-                            {step.law && <LawBadge>{step.law}</LawBadge>}
+                            {step.law && <div className="self-start sm:self-auto"><LawBadge>{step.law}</LawBadge></div>}
                           </div>
-                          <p className="text-[15px] text-slate-700 font-medium leading-relaxed">{step.desc}</p>
+                          <p className="text-[13.5px] sm:text-[15px] text-slate-700 font-medium leading-relaxed">{step.desc}</p>
                           
                           {step.alert && (
-                            <div className="mt-4 p-3 bg-amber-50 text-amber-900 text-sm font-black uppercase tracking-wide rounded-xl border border-amber-200 inline-block shadow-sm">
+                            <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-amber-50 text-amber-900 text-[11px] sm:text-sm font-black uppercase tracking-wide rounded-xl border border-amber-200 inline-block shadow-sm">
                               {step.alert}
                             </div>
                           )}
 
                           {step.extra && (
-                            <div className="mt-4 bg-slate-50 p-4 rounded-xl text-[14px] text-slate-700 font-medium border border-slate-200 leading-relaxed shadow-inner">
-                              <span className="font-black text-indigo-700 uppercase text-[10px] tracking-widest block mb-1">Muhim detal</span>
+                            <div className="mt-3 sm:mt-4 bg-slate-50 p-3 sm:p-4 rounded-xl text-[12.5px] sm:text-[14px] text-slate-700 font-medium border border-slate-200 leading-relaxed shadow-inner">
+                              <span className="font-black text-indigo-700 uppercase text-[9px] sm:text-[10px] tracking-widest block mb-1">Muhim detal</span>
                               {step.extra}
                             </div>
                           )}
@@ -985,22 +1005,22 @@
                     ))}
 
                     {/* Step 8 Highlighted Extravaganza */}
-                    <motion.div variants={itemVariants} className="relative pl-14 sm:pl-20 mt-12">
-                      <div className="absolute -left-2 sm:-left-2 top-6 bg-indigo-600 text-white w-14 h-14 sm:w-16 sm:h-16 rounded-full flex justify-center items-center font-black shadow-[0_0_20px_rgba(79,70,229,0.8)] ring-4 ring-white animate-pulse z-10 text-lg">
+                    <motion.div variants={itemVariants} className="relative pl-12 sm:pl-20 mt-10 sm:mt-12">
+                      <div className="absolute -left-1 sm:-left-2 top-4 sm:top-6 bg-indigo-600 text-white w-10 h-10 sm:w-16 sm:h-16 rounded-full flex justify-center items-center font-black shadow-[0_0_20px_rgba(79,70,229,0.8)] ring-4 ring-white animate-pulse z-10 text-sm sm:text-lg">
                         2.8
                       </div>
-                      <div className="bg-gradient-to-br from-indigo-600 via-purple-700 to-indigo-900 p-6 sm:p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden border-[4px] border-indigo-400/50">
+                      <div className="bg-gradient-to-br from-indigo-600 via-purple-700 to-indigo-900 p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden border-[3px] sm:border-[4px] border-indigo-400/50">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                        <div className="absolute -right-10 -bottom-10 opacity-20"><Activity className="w-48 h-48"/></div>
+                        <div className="absolute -right-6 -bottom-6 opacity-20"><Activity className="w-32 sm:w-48 h-32 sm:h-48"/></div>
                         
-                        <h4 className="font-black text-2xl sm:text-3xl mb-4 flex items-center gap-3 relative z-10">
-                          <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md shadow-inner"><Activity className="w-8 h-8 text-white"/></div> 
+                        <h4 className="font-black text-xl sm:text-3xl mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3 relative z-10 leading-tight">
+                          <div className="bg-white/20 p-2 sm:p-3 rounded-xl sm:rounded-2xl backdrop-blur-md shadow-inner shrink-0"><Activity className="w-6 h-6 sm:w-8 sm:h-8 text-white"/></div> 
                           YaAAT bazasiga kiritish
                         </h4>
                         
-                        <div className="bg-black/30 p-5 rounded-2xl backdrop-blur-sm border border-white/20 relative z-10 shadow-inner">
-                          <p className="text-white text-[15px] sm:text-[16px] font-medium leading-relaxed">
-                            "Bojxona qonunbuzarliklari" yagona avtomatlashtirilgan axborot tizimiga holat aniqlangan vaqtdan boshlab <strong className="bg-white text-indigo-900 px-3 py-1.5 rounded-lg shadow-lg mx-1 font-black uppercase tracking-wider text-sm sm:text-base inline-block my-1 animate-bounce">24 soat ichida</strong> bexato kiritilishi qat'iyan talab etiladi!
+                        <div className="bg-black/30 p-4 sm:p-5 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-white/20 relative z-10 shadow-inner">
+                          <p className="text-white text-[13.5px] sm:text-[16px] font-medium leading-relaxed">
+                            "Bojxona qonunbuzarliklari" yagona avtomatlashtirilgan axborot tizimiga holat aniqlangan vaqtdan boshlab <strong className="bg-white text-indigo-900 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg shadow-lg mx-1 font-black uppercase tracking-wider text-[11px] sm:text-base inline-block my-1 animate-bounce">24 soat ichida</strong> bexato kiritilishi qat'iyan talab etiladi!
                           </p>
                         </div>
                       </div>
@@ -1019,6 +1039,47 @@
           
           const scrollRef = useRef(null);
 
+          // Integrate Telegram Web App API
+          useEffect(() => {
+            const tg = window.Telegram?.WebApp;
+            if (tg) {
+              tg.ready();
+              tg.expand();
+              if (tg.disableVerticalSwipes) {
+                 tg.disableVerticalSwipes();
+              }
+              
+              try {
+                // Set the header color to match our slate-900 gradient top
+                tg.setHeaderColor('#0f172a');
+                tg.setBackgroundColor('#f8fafc');
+              } catch(e) {}
+            }
+          }, []);
+
+          // Handle Telegram native back button
+          useEffect(() => {
+            const tg = window.Telegram?.WebApp;
+            if (!tg) return;
+
+            const handleBack = () => {
+              handleHaptic();
+              setActiveTab(null);
+            };
+
+            if (activeTab) {
+              tg.BackButton.show();
+              tg.BackButton.onClick(handleBack);
+            } else {
+              tg.BackButton.hide();
+              tg.BackButton.offClick(handleBack);
+            }
+
+            return () => {
+              tg.BackButton.offClick(handleBack);
+            };
+          }, [activeTab]);
+
           const filteredSections = useMemo(() => {
             if (!searchQuery.trim()) return sectionsData;
             const query = searchQuery.toLowerCase();
@@ -1036,7 +1097,7 @@
           const activeSection = activeSectionIndex !== -1 ? sectionsData[activeSectionIndex] : null;
 
           return (
-            <div className="h-screen w-full bg-[#f8fafc] font-sans selection:bg-blue-200 selection:text-blue-900 flex flex-col overflow-hidden relative">
+            <div className="h-[100dvh] w-full bg-[#f8fafc] font-sans selection:bg-blue-200 selection:text-blue-900 flex flex-col overflow-hidden relative">
               
               <AnimatePresence mode="wait">
                 
@@ -1055,76 +1116,79 @@
                     <div className="absolute top-40 -right-20 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
                     {/* Header / Hero */}
-                    <div className="bg-gradient-to-br from-slate-900 via-[#0f172a] to-blue-950 pt-14 pb-8 px-6 rounded-b-[2.5rem] shadow-xl relative z-10 overflow-hidden">
+                    <div className="bg-gradient-to-br from-slate-900 via-[#0f172a] to-blue-950 pt-8 sm:pt-14 pb-8 px-5 sm:px-6 rounded-b-[2.5rem] shadow-xl relative z-10 overflow-hidden shrink-0">
                       <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
                       <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
                       
-                      <div className="flex items-center gap-4 mb-8 relative z-10">
-                        <div className="w-16 h-16 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[1.2rem] flex items-center justify-center shadow-lg">
-                          <PlaneTakeoff className="w-8 h-8 text-blue-300" />
+                      <div className="flex items-center gap-3.5 sm:gap-4 mb-6 sm:mb-8 relative z-10 pt-2">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[1rem] sm:rounded-[1.2rem] flex items-center justify-center shadow-lg shrink-0">
+                          <PlaneTakeoff className="w-7 h-7 sm:w-8 sm:h-8 text-blue-300" />
                         </div>
                         <div>
-                          <h1 className="text-white font-black text-2xl tracking-tight leading-none mb-1">Toshkent Aeroporti</h1>
-                          <p className="text-blue-200/80 text-sm font-medium tracking-wide">Bojxona xodimi qo'llanmasi</p>
+                          <h1 className="text-white font-black text-xl sm:text-2xl tracking-tight leading-none mb-1 sm:mb-1.5">Toshkent Aeroporti</h1>
+                          <p className="text-blue-200/80 text-xs sm:text-sm font-medium tracking-wide">Bojxona xodimi qo'llanmasi</p>
                         </div>
                       </div>
 
-                      <div className="relative group z-10">
-                        <Search className="w-5 h-5 absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
+                      <div className="relative group z-10 allow-select">
+                        <Search className="w-5 h-5 absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
                         <input 
                           type="text" 
                           placeholder="Mavzu yoki qoidani izlang..." 
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-14 pr-5 py-4 bg-white/10 backdrop-blur-xl border border-white/20 focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/30 rounded-2xl text-[15px] transition-all font-medium text-white placeholder-slate-400 focus:text-slate-800 shadow-inner outline-none"
+                          className="w-full pl-12 sm:pl-14 pr-4 sm:pr-5 py-3.5 sm:py-4 bg-white/10 backdrop-blur-xl border border-white/20 focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/30 rounded-2xl text-[14px] sm:text-[15px] transition-all font-medium text-white placeholder-slate-400 focus:text-slate-800 shadow-inner outline-none allow-select"
                         />
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-8 pb-24 scrollbar-hide relative z-10">
-                      <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-5 px-1">Qo'llanma bo'limlari</h2>
+                    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 scrollbar-hide relative z-10">
+                      <h2 className="text-[11px] sm:text-xs font-black text-slate-400 uppercase tracking-widest mb-4 sm:mb-5 px-1">Qo'llanma bo'limlari</h2>
                       
                       {filteredSections.length === 0 && (
                         <div className="text-center py-16">
-                          <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Search className="w-8 h-8 text-slate-400"/>
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Search className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400"/>
                           </div>
-                          <p className="text-slate-500 font-bold">Hech narsa topilmadi</p>
-                          <p className="text-slate-400 text-sm mt-1">Boshqa so'z bilan izlab ko'ring</p>
+                          <p className="text-slate-500 font-bold text-sm sm:text-base">Hech narsa topilmadi</p>
+                          <p className="text-slate-400 text-xs sm:text-sm mt-1">Boshqa so'z bilan izlab ko'ring</p>
                         </div>
                       )}
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-4xl mx-auto">
                         {filteredSections.map((section, index) => (
                           <motion.button
                             variants={itemVariants}
                             initial="hidden"
                             animate="show"
-                            whileTap={{ scale: 0.98 }}
+                            whileTap={{ scale: 0.96 }}
                             key={section.id}
-                            onClick={() => setActiveTab(section.id)}
-                            className="w-full bg-white p-4 sm:p-5 rounded-3xl border border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.03)] flex items-center gap-4 text-left hover:shadow-[0_8px_25px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden"
+                            onClick={() => {
+                               handleHaptic();
+                               setActiveTab(section.id);
+                            }}
+                            className="w-full bg-white p-3.5 sm:p-5 rounded-3xl border border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.03)] flex items-center gap-3.5 sm:gap-4 text-left hover:shadow-[0_8px_25px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden"
                           >
-                            <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl ${section.color} opacity-5 group-hover:opacity-10 rounded-bl-full transition-opacity duration-300`}></div>
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-gradient-to-br ${section.color} shadow-inner relative z-10`}>
-                              <div className="text-white drop-shadow-sm">{section.icon}</div>
+                            <div className={`absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-bl ${section.color} opacity-5 group-hover:opacity-10 rounded-bl-full transition-opacity duration-300`}></div>
+                            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-[1rem] sm:rounded-2xl flex items-center justify-center shrink-0 bg-gradient-to-br ${section.color} shadow-inner relative z-10`}>
+                              <div className="text-white drop-shadow-sm w-5 h-5 sm:w-6 sm:h-6 flex justify-center items-center">{section.icon}</div>
                             </div>
-                            <div className="flex-1 min-w-0 pt-1 relative z-10">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Modul {index + 1}</span>
-                              <h3 className="font-black text-slate-800 text-[15px] sm:text-base leading-tight mb-1.5 truncate">{section.title}</h3>
-                              <p className="text-[12px] sm:text-[13px] text-slate-500 font-medium line-clamp-2">{section.subtitle}</p>
+                            <div className="flex-1 min-w-0 pt-0.5 sm:pt-1 relative z-10">
+                              <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 sm:mb-1.5 block">Modul {index + 1}</span>
+                              <h3 className="font-black text-slate-800 text-[14px] sm:text-[15px] lg:text-base leading-tight mb-1 sm:mb-1.5 truncate">{section.title}</h3>
+                              <p className="text-[11px] sm:text-[12px] lg:text-[13px] text-slate-500 font-medium line-clamp-2 leading-snug">{section.subtitle}</p>
                             </div>
-                            <div className="hidden sm:flex w-10 h-10 rounded-full bg-slate-50 items-center justify-center group-hover:bg-blue-50 transition-colors shrink-0 relative z-10 border border-slate-100 group-hover:border-blue-100">
-                              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-500" />
+                            <div className="flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-50 items-center justify-center group-hover:bg-blue-50 transition-colors shrink-0 relative z-10 border border-slate-100 group-hover:border-blue-100">
+                              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-blue-500" />
                             </div>
                           </motion.button>
                         ))}
                       </div>
                       
                       {/* FOOTER SECTION */}
-                      <div className="mt-12 text-center pb-4 opacity-70 hover:opacity-100 transition-opacity">
-                        <p className="text-sm font-bold text-slate-500 tracking-wide">Toshkent-AERO IBK</p>
-                        <p className="text-xs font-medium text-blue-500 mt-1 inline-block">by SHAKHOBIDDIN NORMAMATOV</p>
+                      <div className="mt-10 sm:mt-12 text-center pb-4 opacity-60">
+                        <p className="text-xs sm:text-sm font-bold text-slate-500 tracking-wide">Toshkent-AERO IBK</p>
+                        <p className="text-[10px] sm:text-xs font-medium text-blue-500 mt-1 inline-block">SHAKHOBIDDIN NORMAMATOV</p>
                       </div>
                     </div>
                   </motion.div>
@@ -1141,44 +1205,48 @@
                     className="absolute inset-0 z-20 flex flex-col h-full bg-[#f8fafc] overflow-hidden"
                   >
                     
-                    <header className="bg-white/90 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
+                    <header className="bg-white/90 backdrop-blur-xl border-b border-slate-200/80 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm shrink-0">
                       <button 
-                        onClick={() => setActiveTab(null)}
-                        className="p-2 sm:p-2.5 -ml-2 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:shadow-sm active:scale-95 transition-all text-slate-700 flex items-center gap-1 group"
+                        onClick={() => {
+                            handleHaptic();
+                            setActiveTab(null);
+                        }}
+                        className="p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:shadow-sm active:scale-95 transition-all text-slate-700 flex items-center gap-1 group"
                       >
                         <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
-                        <span className="text-xs font-black uppercase tracking-wider pr-1 hidden sm:block">Orqaga</span>
+                        <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider pr-1 hidden sm:block">Orqaga</span>
                       </button>
-                      <div className="flex-1 text-center sm:text-right px-4 overflow-hidden">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">O'quv Moduli</span>
-                        <h2 className="font-black text-slate-800 text-[14px] sm:text-base truncate">{activeSection.title}</h2>
+                      <div className="flex-1 text-center sm:text-right px-3 sm:px-4 overflow-hidden">
+                        <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">O'quv Moduli</span>
+                        <h2 className="font-black text-slate-800 text-[13px] sm:text-[14px] lg:text-base truncate leading-tight">{activeSection.title}</h2>
                       </div>
-                      <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 shadow-inner bg-gradient-to-br ${activeSection.color}`}>
-                        {React.cloneElement(activeSection.icon, { className: "w-5 h-5 text-white" })}
+                      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] sm:rounded-[12px] flex items-center justify-center shrink-0 shadow-inner bg-gradient-to-br ${activeSection.color}`}>
+                        {React.cloneElement(activeSection.icon, { className: "w-4 h-4 sm:w-5 sm:h-5 text-white" })}
                       </div>
                     </header>
 
-                    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 sm:py-10 bg-[#f8fafc] flex flex-col scroll-smooth relative">
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-8 py-5 sm:py-10 bg-[#f8fafc] flex flex-col scroll-smooth relative allow-select">
                       {/* Fade overlay for scrolling */}
-                      <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-[#f8fafc] to-transparent z-10 pointer-events-none"></div>
+                      <div className="absolute top-0 left-0 w-full h-6 sm:h-8 bg-gradient-to-b from-[#f8fafc] to-transparent z-10 pointer-events-none"></div>
 
                       <div className="max-w-2xl mx-auto w-full flex-1 relative z-0">
                         {activeSection.content()}
                         
                         {/* NEXT / PREV NAVIGATION */}
-                        <div className="mt-16 mb-28 pt-10 border-t-2 border-slate-200 border-dashed flex flex-col sm:flex-row gap-4 justify-between relative">
+                        <div className="mt-12 sm:mt-16 mb-24 sm:mb-28 pt-8 sm:pt-10 border-t-2 border-slate-200 border-dashed flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between relative">
                           {activeSectionIndex > 0 ? (
                             <button 
                               onClick={() => {
+                                handleHaptic();
                                 setActiveTab(sectionsData[activeSectionIndex - 1].id);
                                 scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                               }}
-                              className="flex-1 flex items-center gap-4 p-5 rounded-3xl bg-white border border-slate-200 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-lg hover:border-slate-300 hover:-translate-y-1 transition-all text-left group"
+                              className="flex-1 flex items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-200 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-lg hover:border-slate-300 active:scale-[0.98] transition-all text-left group"
                             >
-                              <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 group-hover:bg-slate-100 group-hover:text-slate-800 transition-colors"><ChevronLeft className="w-6 h-6"/></div>
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-[14px] sm:rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 group-hover:bg-slate-100 group-hover:text-slate-800 transition-colors"><ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6"/></div>
                               <div className="min-w-0">
-                                <span className="text-[10px] sm:text-xs text-slate-400 font-black uppercase tracking-widest block mb-1">Oldingi mavzu</span>
-                                <span className="font-bold text-slate-800 text-sm sm:text-[15px] truncate block">{sectionsData[activeSectionIndex - 1].title}</span>
+                                <span className="text-[9px] sm:text-[10px] lg:text-xs text-slate-400 font-black uppercase tracking-widest block mb-0.5 sm:mb-1">Oldingi mavzu</span>
+                                <span className="font-bold text-slate-800 text-[13px] sm:text-sm lg:text-[15px] truncate block">{sectionsData[activeSectionIndex - 1].title}</span>
                               </div>
                             </button>
                           ) : <div className="flex-1 hidden sm:block"></div>}
@@ -1186,26 +1254,30 @@
                           {activeSectionIndex < sectionsData.length - 1 ? (
                             <button 
                               onClick={() => {
+                                handleHaptic();
                                 setActiveTab(sectionsData[activeSectionIndex + 1].id);
                                 scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                               }}
-                              className="flex-1 flex items-center justify-end gap-4 p-5 rounded-3xl bg-white border border-slate-200 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-lg hover:border-slate-300 hover:-translate-y-1 transition-all text-right group"
+                              className="flex-1 flex items-center justify-end gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-200 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-lg hover:border-slate-300 active:scale-[0.98] transition-all text-right group"
                             >
                               <div className="min-w-0">
-                                <span className="text-[10px] sm:text-xs text-slate-400 font-black uppercase tracking-widest block mb-1">Keyingi mavzu</span>
-                                <span className="font-bold text-slate-800 text-sm sm:text-[15px] truncate block">{sectionsData[activeSectionIndex + 1].title}</span>
+                                <span className="text-[9px] sm:text-[10px] lg:text-xs text-slate-400 font-black uppercase tracking-widest block mb-0.5 sm:mb-1">Keyingi mavzu</span>
+                                <span className="font-bold text-slate-800 text-[13px] sm:text-sm lg:text-[15px] truncate block">{sectionsData[activeSectionIndex + 1].title}</span>
                               </div>
-                              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0 group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors"><ChevronRight className="w-6 h-6"/></div>
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-[14px] sm:rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0 group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors"><ChevronRight className="w-5 h-5 sm:w-6 sm:h-6"/></div>
                             </button>
                           ) : <div className="flex-1 hidden sm:block"></div>}
                         </div>
                       </div>
                       
                       {/* FLOATING COMPLETE BUTTON */}
-                      <div className="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-xl border-t border-slate-200 p-4 pb-6 z-40 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+                      <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-xl border-t border-slate-200/80 p-3 sm:p-4 pb-5 sm:pb-6 z-40 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] shrink-0">
                          <button 
-                           onClick={() => setActiveTab(null)}
-                           className={`w-full max-w-2xl mx-auto block py-4 sm:py-5 rounded-2xl text-white font-black uppercase tracking-widest text-[13px] sm:text-sm shadow-xl bg-gradient-to-r ${activeSection.color} hover:opacity-90 active:scale-[0.98] transition-all border border-white/20`}
+                           onClick={() => {
+                              handleHaptic('medium');
+                              setActiveTab(null);
+                           }}
+                           className={`w-full max-w-2xl mx-auto block py-3.5 sm:py-4 sm:py-5 rounded-xl sm:rounded-2xl text-white font-black uppercase tracking-widest text-[12px] sm:text-[13px] lg:text-sm shadow-xl bg-gradient-to-r ${activeSection.color} hover:opacity-90 active:scale-[0.98] transition-all border border-white/20`}
                          >
                            Tushunarli, Bosh menyuga qaytish
                          </button>
